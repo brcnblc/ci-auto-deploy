@@ -1,0 +1,16 @@
+{
+  "aws,ebt,eb,myApi,staging": {
+    "environmentFile": ".deploy/env/.env.myApi.staging",
+    "configFile": ".deploy/aws/myApi.staging.yml",
+    "disableLines": [
+      ".env"
+    ],
+    "createParameters":{
+      "config": {
+        "file": ".deploy/config/create/createConfigAws.json",
+        "launch": "single-private-vpc"
+      }
+    }
+  }
+  
+}
