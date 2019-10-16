@@ -1,0 +1,23 @@
+{
+  "name": "ci-auto-deploy",
+  "version": "1.0.0",
+  "description": "Automatic Deployment for Continuous Delivery Pipelines",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/brcnblc/ci-auto-deploy.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/brcnblc/ci-auto-deploy/issues"
+  },
+  "homepage": "https://github.com/brcnblc/ci-auto-deploy#readme",
+  "dependencies": {
+    "dot-prop-immutable": "^1.5.0"
+  }
+}

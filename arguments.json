@@ -1,0 +1,174 @@
+{ "title" : "Automatic Deployment for Continuous Integration Pipelines",
+  "arguments" : {
+    "cloud-provider" : {
+      "variableName" : "cloudProvider",
+      "defaultValue" : "aws",
+      "type" : "parameter",
+      "longCommand" : "cloud-provider",
+      "shortCommand" : "cp",
+      "definition" : "Defines the cloud provider to deploy.",
+      "usage" : ["aws", "gcp"]
+    },
+    "cloud-service" : {
+      "variableName" : "cloudService",
+      "defaultValue" : "ebt",
+      "type" : "parameter",
+      "longCommand" : "cloud-service",
+      "shortCommand" : "cs",
+      "definition" : "Defines the cloud service infrastructure to deploy.",
+      "usage" : ["ebt", "mcd"]
+    },
+    "cloud-tool" : {
+      "variableName" : "cloudTool",
+      "defaultValue" : "eb",
+      "type" : "parameter",
+      "longCommand" : "cloud-tool",
+      "shortCommand" : "ct",
+      "definition" : "Defines the cloud SDK tool to deploy.",
+      "usage" : ["eb", "code-commit"]
+    },
+    "application" : {
+      "variableName" : "application",
+      "defaultValue" : "last",
+      "type" : "parameter",
+      "longCommand" : "application",
+      "shortCommand" : "app",
+      "definition" : "Defines the application name to deploy.",
+      "usage" : "<AplicationName>"
+    },
+    "environment" : {
+      "variableName" : "environment",
+      "defaultValue" : "staging",
+      "type" : "parameter",
+      "longCommand" : "environment",
+      "shortCommand" : "env",
+      "definition" : "Defines the application environment to deploy.",
+      "usage" : "<EnvirpnmentName>"
+    },
+    "config-folder" : {
+      "variableName" : "configFolder",
+      "defaultValue" : ".deploy/config/files",
+      "type" : "parameter",
+      "longCommand" : "config-folder",
+      "shortCommand" : "conf",
+      "definition" : "Defines the folder which includes deployment configuration files. (*.json)",
+      "usage" : "<PathToConfigFileFolder>"
+    },
+    "force-create" : {
+      "variableName" : "forceCreate",
+      "defaultValue" : true,
+      "type" : "boolean",
+      "longCommand" : "force-create",
+      "shortCommand" : "fc",
+      "definition" : "Creates environment if it does not already exist.",
+      "usage" : null
+    },
+    "version-label" : {
+      "variableName" : "versionLabel",
+      "defaultValue" : "describe",
+      "type" : "parameter",
+      "longCommand" : "version-label",
+      "shortCommand" : "vl",
+      "definition" : "Defines the version label. If describe is passed, git describe is used.",
+      "usage" : "<VersionLabel> | describe | package"
+    },
+    "description-text" : {
+      "variableName" : "descriptionText",
+      "defaultValue" : null,
+      "type" : "parameter",
+      "longCommand" : "description-text",
+      "shortCommand" : "dt",
+      "definition" : "Defines the deployment description text. Last commit message is used , if nothing supplied.",
+      "usage" : "<DescriptionText>"
+    },
+    "version-prefix" : {
+      "variableName" : "versionPrefix",
+      "defaultValue" : "v",
+      "type" : "parameter",
+      "longCommand" : "version-prefix",
+      "shortCommand" : "vp",
+      "definition" : "Defines the version prefix.",
+      "usage" : "<VersionPrefix>"
+    },
+    "package-file" : {
+      "variableName" : "packageFile",
+      "defaultValue" : "package.json",
+      "type" : "parameter",
+      "longCommand" : "package-file",
+      "shortCommand" : "pf",
+      "definition" : "Defines the package definition file.",
+      "usage" : "<PackageFile>"
+    },
+    "existing-version" : {
+      "variableName" : "existingVersion",
+      "defaultValue" : null,
+      "type" : "parameter",
+      "longCommand" : "existing-version",
+      "shortCommand" : "ev",
+      "definition" : "Defines the existing application version to be updated.",
+      "usage" : "<ExistingVersion>"
+    },
+    "deploy-staged" : {
+      "variableName" : "deployStaged",
+      "defaultValue" : null,
+      "type" : "boolean",
+      "longCommand" : "staged",
+      "shortCommand" : "st",
+      "definition" : "Deploys staged state of repository instead of commited version.",
+      "usage" : null
+    },
+    "force-update" : {
+      "variableName" : "forceUpdate",
+      "defaultValue" : null,
+      "type" : "boolean",
+      "longCommand" : "force-update",
+      "shortCommand" : "fu",
+      "definition" : "Deletes existing version it it already exists.",
+      "usage" : null
+    },
+    "revision-prefix" : {
+      "variableName" : "revisionPrefix",
+      "defaultValue" : "r",
+      "type" : "parameter",
+      "longCommand" : "revision-prefix",
+      "shortCommand" : "rp",
+      "definition" : "Defines the revision prefix when existing application version to be updated.",
+      "usage" : "<RevisionPrefix>"
+    },
+    "revision-number" : {
+      "variableName" : "revisionNumber",
+      "defaultValue" : "auto",
+      "type" : "parameter",
+      "longCommand" : "revision-number",
+      "shortCommand" : "rn",
+      "definition" : "Defines the manual revision number when existing application version to be updated.",
+      "usage" : "<RevisionNumber> | auto"
+    },
+    "version-suffix" : {
+      "variableName" : "versionSuffix",
+      "defaultValue" : null,
+      "type" : "parameter",
+      "longCommand" : "version-suffix",
+      "shortCommand" : "vs",
+      "definition" : "Defines the manual version suffix to be added to the version.",
+      "usage" : "<VersionSuffix>"
+    },
+    "last-run-file" : {
+      "variableName" : "lastRunFile",
+      "defaultValue" : ".deploy/config/last/last_run.json",
+      "type" : "parameter",
+      "longCommand" : "last-run-file",
+      "shortCommand" : "lrf",
+      "definition" : "Defines the name of the file in which last ran arguments will be saved.",
+      "usage" : "<Path/FileName.json>"
+    }
+  },
+  "positionals" : ["cloud-provider","application","environment"],
+  "examples" : {
+    "1" : {
+      "title" : "Deploy myApplication to staging environment at AWS Elastic Beans Talk using eb command line tool",
+      "example" : "node ./deploy/modules/deploy.js -app myApolication -env staging -cp aws -cs ebt -ct eb -conf \".deploy/config/files\""
+    }
+  }
+
+}
