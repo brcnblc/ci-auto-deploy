@@ -11,6 +11,14 @@
       "program": "${workspaceFolder}/deploy.js",
       "cwd": "${workspaceFolder}",
       "args": ["aws myApp staging"]
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Deploy All",
+      "program": "${workspaceFolder}/deploy.js",
+      "cwd": "${workspaceFolder}",
+      "args": ["aws", "all", "staging", "--debug"]
     }
   ]
 }

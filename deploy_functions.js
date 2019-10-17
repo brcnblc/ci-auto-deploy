@@ -3,10 +3,8 @@
 const { spawn, spawnSync, fork , exec} = require("child_process"); // Syncronous execution
 const fs = require("fs");
 const YAML = require('yaml');
-const { git, nested, escapeRegExp, dictMerge } = require('./library');
+const { git, escapeRegExp, dictMerge } = require('./library');
 const dotProp = require ('dot-prop-immutable');
-const debug = true;
-
 
 // Copies source file on to target and replaces the target content.
 function copyFile(source, target) {
@@ -91,75 +89,6 @@ function writeLastDeployedFile(file, field, value){
   fs.writeFileSync(file, JSON.stringify(fileContents, null, 2))
 }
 
-//DEPLOY
-async function deploy(kwArgs) {
-
-  let exitCode;
-  const {configFolder} = kwArgs;
-  const deployConfigurations = deploymentConfigurations(configFolder);
-  let {cloudProvider, cloudService, cloudTool, application, environment} = kwArgs;
-
-  //Read last run config
-  let lastRunFileContents = parseJsonFile(kwArgs.lastRunFile) || {};
-  if (lastRunFileContents.kwArgs){
-    if (!cloudProvider){cloudProvider = lastRunFileContents.kwArgs.cloudProvider}
-    if (application == 'last'){application = lastRunFileContents.kwArgs.application}
-    if (!environment){environment = lastRunFileContents.kwArgs.environment}
-  }
-
-  //Read ebconfig yml file
-  let ebConfigContents = parseYmlFile('.elasticbeanstalk/config.yml', 'utf8')
-  if (ebConfigContents && application == 'last'){
-    application = ebConfigContents.global.application_name}
-
-  kwArgs.application = application;
-  kwArgs.environment = `${application}-${environment}`;
-  kwArgs.cloudProvider = cloudProvider;
-
-  if (application == 'last' |! application ){
-    throw('Application can not be null.')}
-
-  const mainConfig = `${cloudProvider},${cloudService},${cloudTool}`
-  const subConfig = `${application},${environment}`;
-  
-  //Assign defaults
-  let deployConfig = deployConfigurations['defaults'];
-  
-  //Exit if configuration not found
-  if (!deployConfigurations[mainConfig][subConfig]) {
-    throw (`Configuration "${config}" not found !`);}
-
-  //Merge specific configuration parameters
-  dictMerge(deployConfig, deployConfigurations[mainConfig][subConfig]);
-
-  //Call platform specific deploy function
-  switch (`${cloudProvider},${cloudService},${cloudTool}`){
-    case 'aws,ebt,eb':
-      await deployAwsElasticBeansTalk(kwArgs, deployConfig)
-      .then(code => {exitCode = code})
-      .catch(err => {
-        if (!debug){
-          console.error('Error :', err); throw (-1)
-        } else {
-          console.error(err.stack || err)
-          throw (-1)
-        }
-
-      })
-      break;
-    default:
-      console.error ('Deployment Function Does not exist !');
-      throw (-1);
-  }
-
-  // Write last ran succesfull configuration
-  if (exitCode == 0){
-    writeLastDeployedFile(kwArgs.lastRunFile, 'kwArgs', kwArgs)
-  }
-
-  return exitCode;
-}
-
 // eb Sync command
 function eb(args, returnError = false, stdin = null) {
   let result;
@@ -179,10 +108,16 @@ function sleep(ms){
 }
 
 // ebAsync
-async function runSpawn(command, args) {
+async function runSpawn(command, args, simulate) {
   return new Promise(async function (resolve, reject)  {
-    let processRunning, exitCode, dots='Wait.';
-    const subProcess = spawn(command, args, {shell:true});
+    let subProcess, processRunning, exitCode, dots='Wait.';
+    
+    if (!simulate) {
+      subProcess = spawn(command, args, {shell:true});
+    } else {
+      subProcess = spawn(command, ['--help'], {shell:true});
+    }
+    
     subProcess.on('data', data => console.log(`${data.toString()}`));
     processRunning = true;
     subProcess.stdout.on('data', data => console.log(`${data.toString()}`));
@@ -196,7 +131,6 @@ async function runSpawn(command, args) {
 
     resolve(exitCode)
   })
-
 
 }
 
@@ -237,6 +171,129 @@ function evaluateCreateConfigFile(createParams){
 
   return params
 
+}
+
+// Init Deploy
+async function initDeploy(kwArgs){
+  let exitCode;
+  const {configFolder} = kwArgs;
+  const deployConfigurations = deploymentConfigurations(configFolder);
+  let {cloudProvider, cloudService, cloudTool, application, environment} = kwArgs;
+  const mainConfig = `${cloudProvider},${cloudService},${cloudTool}`
+
+  if (kwArgs.application == 'all'){
+
+    console.log (`Process started for all applications ${environment} environment.`)
+    let cnt = 0, scnt=0, error = false;
+    const items = Object.keys(deployConfigurations[mainConfig]);
+    for (let key of items){
+      cnt++;
+      const appName = key.split(',')[0];
+      const envName = key.split(',')[1];
+      if (envName == environment){
+        const _kwArgs = Object.assign({}, kwArgs)
+        _kwArgs.application = appName;
+        console.log(`\nStep ${cnt} of ${items.length}`)
+        console.log(`----- Deploying "${appName}" into "${environment}" environment -----\n`)
+        try { 
+          exitCode = await deploy(_kwArgs);
+          scnt++;
+        } catch (err) {
+          error = true;
+          if (kwArgs.debug && err.stack){
+            console.error(err.stack)
+          } else {
+            console.error(err)
+            }
+        }
+        console.log(`\n----- End of deployment "${appName} - ${environment}" environment -----\n`)
+      }
+    }
+
+    //End of batch deployment.
+    console.log(`${scnt} items deployed.\n`);
+    
+    if (error){
+      console.error(`\n${cnt - scnt} items could not be deployed.\n`);
+      throw -1
+    }
+    
+  } else {
+
+    console.log(`\n----- Deploying "${application}" into "${environment}" environment -----\n`)
+    exitCode = await deploy(kwArgs)
+    console.log(`\n----- End of deployment "${application} - ${environment}" environment -----\n`)
+  }
+  return exitCode;
+}
+
+// DEPLOY Main Function
+async function deploy(kwArgs) {
+
+  let exitCode;
+  const {configFolder} = kwArgs;
+  const deployConfigurations = deploymentConfigurations(configFolder);
+  let {cloudProvider, cloudService, cloudTool, application, environment} = kwArgs;
+
+  //Read last run config
+  let lastRunFileContents = parseJsonFile(kwArgs.lastRunFile) || {};
+  if (lastRunFileContents.kwArgs){
+    if (!cloudProvider){cloudProvider = lastRunFileContents.kwArgs.cloudProvider}
+    if (application == 'last'){application = lastRunFileContents.kwArgs.application}
+    if (!environment){environment = lastRunFileContents.kwArgs.environment}
+  }
+
+  //Read ebconfig yml file
+  let ebConfigContents = parseYmlFile('.elasticbeanstalk/config.yml', 'utf8')
+  if (ebConfigContents && application == 'last'){
+    application = ebConfigContents.global.application_name}
+
+  kwArgs.application = application;
+  kwArgs.environment = `${application}-${environment}`;
+  kwArgs.cloudProvider = cloudProvider;
+
+  if (application == 'last' |! application ){
+    throw('Application can not be null.')}
+
+  const mainConfig = `${cloudProvider},${cloudService},${cloudTool}`
+  const subConfig = `${application},${environment}`;
+  
+  //Assign defaults
+  let deployConfig = deployConfigurations['defaults'];
+  
+  //Exit if configuration not found
+  if (!deployConfigurations[mainConfig][subConfig]) {
+    throw (`Configuration "${mainConfig}.${subConfig}" not found !`);}
+
+  //Merge specific configuration parameters
+  dictMerge(deployConfig, deployConfigurations[mainConfig][subConfig]);
+
+  //Call platform specific deploy function
+  switch (`${cloudProvider},${cloudService},${cloudTool}`){
+    case 'aws,ebt,eb':
+      await deployAwsElasticBeansTalk(kwArgs, deployConfig)
+      .then(code => {exitCode = code})
+      .catch(err => {
+        if (!kwArgs.debug){
+          console.error('Error :', err); throw (-1)
+        } else {
+          console.error(err.stack || err)
+          throw (-1)
+        }
+
+      })
+      break;
+    default:
+      console.error ('Deployment Function Does not exist !');
+      throw (-1);
+  }
+
+  // Write last ran succesfull configuration
+  if (exitCode == 0){
+    writeLastDeployedFile(kwArgs.lastRunFile, 'kwArgs', kwArgs)
+  }
+
+  return exitCode;
 }
 
 // AWS Elastic Beans Talk Deployement by eb client tool
@@ -330,17 +387,18 @@ async function deployAwsElasticBeansTalk (kwArgs, configuration) {
       if (kwArgs.forceCreate){
         console.log(`Environment ${environment} not found. Creating ${environment} environment. This will take a few minutes.`)
         if (!createParameters.cname) {createParameters['cname'] = `${environment}`};
-        let createArgs = ['create', environment];
+        let createArgs = ['create', environment, "--nohang"];
         for (let [key, value] of Object.entries(createParameters).sort()) {
           createArgs.push(`--${key}`);
           if (typeof value != 'boolean') {createArgs.push(`"${value}"`)};
         }
         console.log ('eb', createArgs.join(' '))
-        exitCode = await runSpawn('eb', createArgs)
+        exitCode = await runSpawn('eb', createArgs, kwArgs.simulate)
         if (exitCode != 0){ throw ('Error occurred while creating environment.')}
       } else {
         throw result
       }
+      return exitCode
     }
 
     //Check environment Again
@@ -381,7 +439,8 @@ async function deployAwsElasticBeansTalk (kwArgs, configuration) {
     // Run command
     console.log('eb',ebArgs.join(' '))
     ebArgs.push('-p')
-    exitCode = await runSpawn('eb', ebArgs)
+    ebArgs.push('--nohang')
+    exitCode = await runSpawn('eb', ebArgs, kwArgs.simulate)
     .catch(async function (err) {
       if (err.includes('WARNING: Deploying a previously deployed commit')){
         result = eb('abort')
@@ -408,7 +467,7 @@ async function deployAwsElasticBeansTalk (kwArgs, configuration) {
             const newVersion = oldVersion + '-' + new Date().toJSON()
             ebArgs[findInd + 1] = newVersion
             console.log(`Retrying to deploy application with time stamp as ${newVersion}`)
-            runSpawn('eb', ebArgs)
+            runSpawn('eb', ebArgs, kwArgs.simulate)
             .then(code => {ecode = code;done=true;})
             .catch(err => {ecode = err;done=true})
           }
@@ -438,4 +497,4 @@ async function deployAwsElasticBeansTalk (kwArgs, configuration) {
 
 }
 
-module.exports = deploy;
+module.exports = initDeploy;

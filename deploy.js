@@ -1,4 +1,4 @@
-const deploy = require('./deploy_functions');
+const initDeploy = require('./deploy_functions');
 const argParse = require('./argParse');
 const argDefinitions = require('./arguments.json');
 const Print = require('./library').Print.prototype;
@@ -16,16 +16,22 @@ async function run (argString) {
     process.exit(1);
   }
 
-  let exitode;
+  let exitcode;
   try{
-    exitode = await deploy(kwArgs)
+    exitcode = await initDeploy(kwArgs);
   } catch (err){
-    if (err != -1) console.error(err)
+    if (err != -1) {
+      if (kwArgs.debug && err.stack){
+        console.error(err.stack)
+      } else {
+        console.error(err)
+        }
+      }
     throw -1
   }
 
 
-  return exitode
+  return exitcode
 
 }
 

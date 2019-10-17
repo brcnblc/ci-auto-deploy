@@ -12,6 +12,12 @@
     },
     "myApp2,staging": {
       "environmentFile": ".deploy/env/.env.myApp2.staging"
+    },
+    "myApp,production": {
+      "environmentFile": ".deploy/env/.env.myApp.production"
+    },
+    "myApp2,production": {
+      "environmentFile": ".deploy/env/.env.myApp2.production"
     }
   }
   

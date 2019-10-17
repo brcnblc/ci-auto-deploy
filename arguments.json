@@ -170,6 +170,24 @@
       "shortCommand" : "rg",
       "definition" : "Defines the server region where application will be deployed.",
       "usage" : "<RegionName>"
+    },
+    "simulate" : {
+      "variableName" : "simulate",
+      "defaultValue" : null,
+      "type" : "boolean",
+      "longCommand" : "simulate",
+      "shortCommand" : "sim",
+      "definition" : "Does not run the deploy commands.",
+      "usage" : null
+    },
+    "debug" : {
+      "variableName" : "debug",
+      "defaultValue" : null,
+      "type" : "boolean",
+      "longCommand" : "debug",
+      "shortCommand" : "dbg",
+      "definition" : "Prints out stack information on error.",
+      "usage" : null
     }
   },
   "positionals" : ["cloud-provider","application","environment"],
