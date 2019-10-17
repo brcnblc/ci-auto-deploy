@@ -3,7 +3,7 @@
 const { spawn, spawnSync, fork , exec} = require("child_process"); // Syncronous execution
 const fs = require("fs");
 const YAML = require('yaml');
-const { git, nested, escapeRegExp } = require('./library');
+const { git, nested, escapeRegExp, dictMerge } = require('./library');
 const dotProp = require ('dot-prop-immutable');
 const debug = true;
 
@@ -91,6 +91,7 @@ function writeLastDeployedFile(file, field, value){
   fs.writeFileSync(file, JSON.stringify(fileContents, null, 2))
 }
 
+//DEPLOY
 async function deploy(kwArgs) {
 
   let exitCode;
@@ -118,11 +119,20 @@ async function deploy(kwArgs) {
   if (application == 'last' |! application ){
     throw('Application can not be null.')}
 
-  const config = `${cloudProvider},${cloudService},${cloudTool},${application},${environment}`;
-  const deployConfig = deployConfigurations[config];
+  const mainConfig = `${cloudProvider},${cloudService},${cloudTool}`
+  const subConfig = `${application},${environment}`;
+  
+  //Assign defaults
+  let deployConfig = deployConfigurations['defaults'];
+  
+  //Exit if configuration not found
+  if (!deployConfigurations[mainConfig][subConfig]) {
+    throw (`Configuration "${config}" not found !`);}
 
-  if (!deployConfig)throw (`Configuration "${config}" not found !`);
+  //Merge specific configuration parameters
+  dictMerge(deployConfig, deployConfigurations[mainConfig][subConfig]);
 
+  //Call platform specific deploy function
   switch (`${cloudProvider},${cloudService},${cloudTool}`){
     case 'aws,ebt,eb':
       await deployAwsElasticBeansTalk(kwArgs, deployConfig)
@@ -193,8 +203,7 @@ async function runSpawn(command, args) {
 // Evaluate create parameters
 function evaluateCreateConfigFile(createParams){
   let params = {};
-  const {config} = createParams || {};
-  const {file, launch} = config || {};
+  const {configFile, launch} = createParams || {};
 
   // function to replace #elements and convert arrays to strings
   function replaceContent(contentObject, key, value){
@@ -207,8 +216,8 @@ function evaluateCreateConfigFile(createParams){
   }
 
   //Evaluate config file
-  if (file && launch){
-    const fileContents = JSON.parse(fs.readFileSync(file, 'utf8'));
+  if (configFile && launch){
+    const fileContents = JSON.parse(fs.readFileSync(configFile, 'utf8'));
     const selection = fileContents[launch];
 
     for (let [key, value] of Object.entries(selection)){
@@ -222,6 +231,10 @@ function evaluateCreateConfigFile(createParams){
     replaceContent(createParams, key, value)
   }
 
+  //Delete Config file from create parameters
+  delete params.launch
+  delete params.configFile
+
   return params
 
 }
@@ -229,12 +242,9 @@ function evaluateCreateConfigFile(createParams){
 // AWS Elastic Beans Talk Deployement by eb client tool
 async function deployAwsElasticBeansTalk (kwArgs, configuration) {
 
-  const {environmentFile, configFile, disableLines} = configuration;
-  const {application, environment} = kwArgs;
-
-
+  const {environmentFile, disableLines} = configuration;
+  const {application, environment, region} = kwArgs;
   const createParameters = evaluateCreateConfigFile(configuration.createParameters);
-
 
   try {
 
@@ -243,8 +253,13 @@ async function deployAwsElasticBeansTalk (kwArgs, configuration) {
     // Copy env file
     copyFile(environmentFile, '.env');
 
+    // init eb 
+    let ebCmd = `init ${application} --region ${region} --platform Node.js --keyname aws`
+    console.log(`Initializing elasticbeanstalk with ${ebCmd}`)
+    result = eb(ebCmd)
+
     // Copy elastic beans talk config file
-    copyFile(configFile, '.elasticbeanstalk/config.yml');
+    //copyFile(configFile, '.elasticbeanstalk/config.yml');
 
     // Copy .gitignore file onto .ebignore file
     copyFile('.gitignore', '.ebignore');

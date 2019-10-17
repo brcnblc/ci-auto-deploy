@@ -161,6 +161,15 @@
       "shortCommand" : "lrf",
       "definition" : "Defines the name of the file in which last ran arguments will be saved.",
       "usage" : "<Path/FileName.json>"
+    },
+    "region" : {
+      "variableName" : "region",
+      "defaultValue" : "eu-central-1",
+      "type" : "parameter",
+      "longCommand" : "region",
+      "shortCommand" : "rg",
+      "definition" : "Defines the server region where application will be deployed.",
+      "usage" : "<RegionName>"
     }
   },
   "positionals" : ["cloud-provider","application","environment"],

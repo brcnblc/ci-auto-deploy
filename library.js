@@ -74,4 +74,19 @@ function nested(obj, callBack = () => {}, parentList = []) {
   });
 }
 
-module.exports = { git, run, Print, escapeRegExp, nested }
+function isDict(v) {
+  return !!v && typeof v==='object' && v!==null && !(v instanceof Array) && !(v instanceof Date) 
+}
+
+function dictMerge(source, merge){
+  for (let k in merge){
+        if ((k in source) && isDict(source[k])){
+            dictMerge(source[k],merge[k])
+        }
+        else{
+          source[k] = merge[k]
+        }
+  }
+}
+
+module.exports = { git, run, Print, escapeRegExp, nested, isDict, dictMerge }

@@ -1,7 +1,5 @@
 node_modules
 *.lock
-last_run.json
-
 # Elastic Beanstalk Files
 .elasticbeanstalk/*
 !.elasticbeanstalk/*.cfg.yml

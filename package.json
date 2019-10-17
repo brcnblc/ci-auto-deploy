@@ -4,14 +4,16 @@
   "description": "Automatic Deployment for Continuous Delivery Pipelines",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "echo \"Started Successfully\" && exit 0",
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "deploy": "node deploy.js"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/brcnblc/ci-auto-deploy.git"
   },
-  "keywords": [],
-  "author": "",
+  "keywords": ["ci-auto-deply","auto-deploy"],
+  "author": "Bircan Bilici",
   "license": "ISC",
   "bugs": {
     "url": "https://github.com/brcnblc/ci-auto-deploy/issues"

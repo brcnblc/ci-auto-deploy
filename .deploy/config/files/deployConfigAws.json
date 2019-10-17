@@ -1,15 +1,17 @@
-{
-  "aws,ebt,eb,myApi,staging": {
-    "environmentFile": ".deploy/env/.env.myApi.staging",
-    "configFile": ".deploy/aws/myApi.staging.yml",
-    "disableLines": [
-      ".env"
-    ],
+{ 
+  "defaults":{
     "createParameters":{
-      "config": {
-        "file": ".deploy/config/create/createConfigAws.json",
-        "launch": "single-private-vpc"
-      }
+      "configFile": ".deploy/config/create/createConfigAws.json",
+      "launch": "single-private"
+    },
+    "disableLines": [".env"]
+  },
+  "aws,ebt,eb": {
+    "myApp,staging": {
+      "environmentFile": ".deploy/env/.env.myApp.staging"
+    },
+    "myApp2,staging": {
+      "environmentFile": ".deploy/env/.env.myApp2.staging"
     }
   }
   

@@ -1,10 +1,10 @@
 global:
-  application_name: myApi
+  application_name: testApp
   branch: null
   default_ec2_keyname: aws
   default_platform: Node.js
   default_region: eu-central-1
-  include_git_submodules: false
+  include_git_submodules: true
   instance_profile: null
   platform_name: null
   platform_version: null
