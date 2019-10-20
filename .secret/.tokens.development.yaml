@@ -1,0 +1,16 @@
+defaults:
+  DB_USER: my_dev_user
+  DB_PASSWORD: my_dev_password
+
+staging:
+  defaults:
+    inherit|: defaults
+
+    MY_API_KEY: 9cb70e31dc63462dc55a05bd8dc3526f
+    MY_SECRET_KEY: d2e86150e7a43f5271a57f9a3dfc682f
+  
+  api1:
+    inherit|: ${staging.defaults}
+    
+    API1_KEY2: 0e315a09cb7bd8dc3526fdc63462d5c5
+    SECRET_KEY2: ad2e8615a3dfc682f0e7a4357f9f5271

@@ -35,7 +35,6 @@ async function run (argString) {
 
 }
 
-
 module.exports = run;
 
 const __name__ = process.argv[1].split('/').pop();
@@ -54,10 +53,10 @@ if (__name__ == 'deploy.js'){
 
   function exit(exitCode){
     if (exitCode == 0){
-      console.log('Process exited succesfully.');
+      console.log('\nProcess exited succesfully.\n');
     }
     else {
-      console.error('Process exited with exit code', exitCode);
+      console.error('\nProcess exited with exit code', exitCode, '\n');
     }
 
     process.exit(exitCode);

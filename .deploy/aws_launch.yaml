@@ -1,0 +1,37 @@
+--- 
+
+defaults: &def
+  vpc.id: &vpc-id vpc-0fbab164 
+
+  subnets: &subnets
+    - subnet-09e6da44
+    - subnet-1fd22075
+    - subnet-79d9f004
+
+  securitygroups: &secgroups
+    - sg-4434a725
+
+vpc: &vpc
+  vpc.id: *vpc-id
+  vpc.ec2subnets: *subnets
+  vpc.securitygroups: *secgroups
+
+single-private-server:
+  single: true
+
+vpc-private-server:
+  <<: *vpc
+  single: true
+
+vpc-private-cluster: 
+  <<: *vpc
+
+vpc-public-cluster:
+  <<: *vpc
+  vpc.ec2subnets: *subnets
+  vpc.elbpublic: true
+  vpc.publicip: true
+
+
+  
+

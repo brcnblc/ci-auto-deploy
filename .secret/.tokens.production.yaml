@@ -1,0 +1,18 @@
+defaults:
+  DB_USER: my_prod_user
+  DB_PASSWORD: my_prod_password
+
+production:
+  defaults:
+  defaults:
+    inherit|: defaults
+
+    MY_API_KEY: 31dc63462d5bc55a09cb70ed8dc3526f
+    MY_SECRET_KEY: 50e7a4357f9a3f5271ad2e861dfc682f
+  
+  api1:
+    inherit|: ${production.defaults}
+
+    SECRET_KEY2|: 9f5271ad2e86150e7a4357fa3dfc682f
+
+

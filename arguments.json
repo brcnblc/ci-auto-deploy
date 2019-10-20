@@ -43,16 +43,16 @@
       "longCommand" : "environment",
       "shortCommand" : "env",
       "definition" : "Defines the application environment to deploy.",
-      "usage" : "<EnvirpnmentName>"
+      "usage" : "<EnvironmentName>"
     },
-    "config-folder" : {
-      "variableName" : "configFolder",
-      "defaultValue" : ".deploy/config/files",
+    "config-file" : {
+      "variableName" : "configFile",
+      "defaultValue" : ".deploy/aws_config.yaml",
       "type" : "parameter",
-      "longCommand" : "config-folder",
+      "longCommand" : "config-file",
       "shortCommand" : "conf",
-      "definition" : "Defines the folder which includes deployment configuration files. (*.json)",
-      "usage" : "<PathToConfigFileFolder>"
+      "definition" : "Defines the file which includes deployment configurations. (*.yaml)",
+      "usage" : "<PathToConfigFile>"
     },
     "force-create" : {
       "variableName" : "forceCreate",
@@ -155,7 +155,7 @@
     },
     "last-run-file" : {
       "variableName" : "lastRunFile",
-      "defaultValue" : ".deploy/config/last/last_run.json",
+      "defaultValue" : ".deploy/.last_run.yaml",
       "type" : "parameter",
       "longCommand" : "last-run-file",
       "shortCommand" : "lrf",
@@ -188,13 +188,70 @@
       "shortCommand" : "dbg",
       "definition" : "Prints out stack information on error.",
       "usage" : null
+    },
+    "app-config" : {
+      "variableName" : "appConfig",
+      "defaultValue" : "default",
+      "type" : "parameter",
+      "longCommand" : "app-config",
+      "shortCommand" : "ac",
+      "definition" : "Selects the application configuration.",
+      "usage" : "<AppConfigName>"
+    },
+    "env-suffix" : {
+      "variableName" : "envSuffix",
+      "defaultValue" : "active",
+      "type" : "parameter",
+      "longCommand" : "env-suffix",
+      "shortCommand" : "es",
+      "definition" : "Defines environment suffix name to be appended.",
+      "usage" : "<EnvironmentSuffix>"
+    },
+    "cname" : {
+      "variableName" : "cname",
+      "defaultValue" : null,
+      "type" : "parameter",
+      "longCommand" : "cname",
+      "shortCommand" : "cn",
+      "definition" : "Defines  cname of the environment.",
+      "usage" : "<Cname>"
+    },
+    "launch" : {
+      "variableName" : "launch",
+      "defaultValue" : null,
+      "type" : "parameter",
+      "longCommand" : "launch",
+      "shortCommand" : "ln",
+      "definition" : "Defines  the launch configuration.",
+      "usage" : "<Cname>"
+    },
+    "launch-file" : {
+      "variableName" : "launchFile",
+      "defaultValue" : ".deploy/aws_launch.yaml",
+      "type" : "parameter",
+      "longCommand" : "launch-file",
+      "shortCommand" : "lnf",
+      "definition" : "Defines the file which includes launch configurations. (*.yaml)",
+      "usage" : "<PathToLaunchFile>"
     }
   },
-  "positionals" : ["cloud-provider","application","environment"],
+  "positionals" : ["cloud-provider", "application", "environment", "env-suffix", "app-config"],
   "examples" : {
     "1" : {
-      "title" : "Deploy myApplication to staging environment at AWS Elastic Beans Talk using eb command line tool",
-      "example" : "node ./deploy/modules/deploy.js -app myApolication -env staging -cp aws -cs ebt -ct eb -conf \".deploy/config/files\""
+      "title" : "FIRST, ADD FOLLOWING LINE to your scripts in package.json.",
+      "example" : "deploy: node deploy.js"
+    },
+    "2" : {
+      "title" : "Deploy myApi1 to staging environment at AWS Elastic Beans Talk",
+      "example" : "deploy aws myApi1 staging"
+    },
+    "3" : {
+      "title" : "Deploy all applications to staging environment. Note that all is a group definition in config file.",
+      "example" : "deploy aws all staging"
+    },
+    "4" : {
+      "title" : "Positional arguments: [cloud-provider] [application] [environment] [env-suffix] [app-config]",
+      "example" : "deploy aws myApi2 staging active highSecurity"
     }
   }
 

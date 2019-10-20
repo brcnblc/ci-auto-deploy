@@ -1,0 +1,76 @@
+--- # Amazon Web Services Deployment Configurations
+cloudProvider/:
+  aws:
+    defaults: 
+      activeCname: ${current.application.name}-${current.environment.name}-active
+
+    # AWS Elasticbeanstalk EB Tool Configurations
+    platform/:
+      awsEbtEb: 
+        defaults: 
+          inherit|: ${current.cloudProvider.defaults}
+          create: 
+            configFile$: .deploy/aws_launch.yaml
+            launch$: private-single-server
+          disableLines: [.env]
+        
+        environment/:
+          # STAGING ENVIRONMENT CONFIGURATIONS
+          staging: 
+            defaults: 
+              inherit|: ${current.platform.defaults}
+              create: 
+                launch$: vpc-public-cluster
+            
+            group:
+              all: [myApi1, myApi2]
+            
+            application/: 
+              myApi1: 
+                defaults: 
+                  inherit|: ${current.environment.defaults}
+                  environmentFile: .environ/.env.my_api1.staging
+                
+                # App Configurations
+                configuration/: 
+                  onOut|: ${checkVariables}
+                  
+                  # Default Configuration
+                  default:
+                    inherit|: ${current.application.defaults}
+                    create:
+                      readYaml|: ${configFile$},${launch$}
+                      # readYml function reads yml file as first argument and 
+                      # returns value of key that is passed as second argument
+                        
+                  # High Security Configuration
+                  highSecurity:
+                    inherit|: ${current.application.defaults}
+                    create:
+                      vpc:
+                        securitygroups: [sg-#hash2]
+
+              myApi2: 
+                defaults: 
+                  inherit|: ${current.environment.defaults}
+                  environmentFile: .environ/.env.my_api2.staging
+                
+                # App Configurations
+                configuration/: 
+                  onOut|: ${checkVariables}
+                  
+                  # Default Configuration
+                  default:
+                    inherit|: ${current.application.defaults}
+                    launch$: vpc-private-server
+                    create:
+                      readYaml|: ${configFile$},${launch$}
+
+                  # High Security Configuration
+                  highSecurity:
+                    inherit|: ${current.application.defaults}
+                    create:
+                      vpc:
+                        securitygroups: [sg-#hash2]
+
+             

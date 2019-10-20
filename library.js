@@ -57,20 +57,54 @@ function git(args, kwargs={}, status, override_simulate ){
 }
 
 function escapeRegExp(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // $& means the whole matched string
+  //try{
+    return str.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"); // $& means the whole matched string
+  //} catch (err) {
+  //  let a=1
+  //}
+  
 }
 
-function nested(obj, callBack = () => {}, parentList = []) {
+function replaceAll(source, srch, repl){
+  return source.split(srch).join(repl)
+}
+
+function nested(obj, callBack = () => {}, internals = {parentList : [], levelEvents : {}}) {
   if (!obj) return null;
-  Object.keys(obj).forEach(item => {
-    let dotObject = parentList.join(".") + "." + item;
-    if (dotObject[0] == '.'){dotObject = dotObject.substr(1)}
-    callBack(item, obj[item], parentList, dotObject);
+  Object.keys(obj).forEach((item, index, array) => {
+    
+    
+    const value = obj[item]
+    const type = Array.isArray(obj[item]) ? 'array' : typeof obj[item]
+    const parentType = Array.isArray(obj) ? 'array' : typeof obj
+    const isValue = type != 'object' && type != 'array'
+    const parentItem = internals.parentList[internals.parentList.length-1]
+    const levelEvents = Object.assign({}, internals.levelEvents)
+    const parentList = internals.parentList.slice(0)
+    let parentPath = parentList.join('.')
+    if (parentPath[0] == '.'){parentPath = parentPath.substr(1)}
+    const currentPath = (parentPath ? parentPath + "." : "") + item;
+    const pathList = parentList.slice(0);pathList.push(item)
+    const level = parentList.length
+    
+
+    // Invoke callback function
+    callBack({item, value, parentPath, currentPath, type, parentType, 
+        isValue, parentItem, level, levelEvents, pathList, parentList});
+
+    internals.levelEvents = {}
+
     if (typeof obj[item] === "object") {
-      parentList.push(item);
-      nested(obj[item], callBack, parentList);
-      parentList.pop();
+      internals.parentList.push(item);
+      internals.levelEvents = {changed: true, onEnter: true}
+      
+      // Recursive call
+      nested(obj[item], callBack, internals);
+      
+      internals.levelEvents = {changed: true, onExit: true}
+      internals.parentList.pop();
     }
+
   });
 }
 
@@ -89,4 +123,4 @@ function dictMerge(source, merge){
   }
 }
 
-module.exports = { git, run, Print, escapeRegExp, nested, isDict, dictMerge }
+module.exports = { git, run, Print, escapeRegExp, nested, isDict, dictMerge, replaceAll }
