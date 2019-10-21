@@ -1,0 +1,18 @@
+--- # CI-AUTO-DEPLOY Configuration File
+config:
+  deployPath: .deploy
+  envPath: .envs
+  awsLaunchFile: ${deployPath}/aws_launch.yaml
+  awsConfigFile: ${deployPath}/aws_config.yaml
+  lastRunFile: .cilast.yaml
+  secretsPath: .cisec
+  passwdFile: ${secretsPath}/.passwd.yaml
+  devToken: ${secretsPath}/.dev_tokens.yaml
+  stgToken: ${secretsPath}/.stg_tokens.yaml
+  prodToken: ${secretsPath}/.prod_tokens.yaml
+
+defaults:
+  cloud-provider: aws
+  region: eu-central-1
+  environment: testing
+

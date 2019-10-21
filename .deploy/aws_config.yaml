@@ -10,7 +10,7 @@ cloudProvider/:
         defaults: 
           inherit|: ${current.cloudProvider.defaults}
           create: 
-            configFile$: .deploy/aws_launch.yaml
+            configFile$: ${config.awsLaunchFile}
             launch$: private-single-server
           disableLines: [.env]
         
@@ -29,7 +29,7 @@ cloudProvider/:
               myApi1: 
                 defaults: 
                   inherit|: ${current.environment.defaults}
-                  environmentFile: .environ/.env.my_api1.staging
+                  environmentFile: ${config.envPath}/.env.my_api1.staging
                 
                 # App Configurations
                 configuration/: 
@@ -53,7 +53,7 @@ cloudProvider/:
               myApi2: 
                 defaults: 
                   inherit|: ${current.environment.defaults}
-                  environmentFile: .environ/.env.my_api2.staging
+                  environmentFile: ${config.envPath}/.env.my_api2.staging
                 
                 # App Configurations
                 configuration/: 

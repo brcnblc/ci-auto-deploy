@@ -1,4 +1,4 @@
---- 
+--- # Elasticbeanstalk Launch Configurations
 
 defaults: &def
   vpc.id: &vpc-id vpc-0fbab164 

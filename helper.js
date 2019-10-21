@@ -116,11 +116,12 @@ const capitalize = s => s.charAt(0).toUpperCase() + s.slice(1)
 const camelCase = (v,s) => v.split(s).slice(1).reduce((p,c) => p + capitalize(c), v.split(s)[0])
 
 // Pass Content after parsing yaml file with parseYmlFile('fileName.yaml') function
-function evaluateYaml(content) { 
+function evaluateYaml(content, variables) { 
   let context = {};
   
   //dictMerge(context, kwArgs)
-  dictMerge(context, content)
+  _.merge(context, variables)
+  _.merge(context, content)
   let conf={};
 
   // Main Nest Function
@@ -181,7 +182,9 @@ function evaluateYaml(content) {
             continue; // pass to next variable in string
           }
         }
-
+        if (item=='configFile$'){
+          let a=1
+        }
         // Found and it is an object
         if (typeof evalValue == 'object'){
           

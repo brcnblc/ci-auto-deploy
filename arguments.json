@@ -47,7 +47,7 @@
     },
     "config-file" : {
       "variableName" : "configFile",
-      "defaultValue" : ".deploy/aws_config.yaml",
+      "defaultValue" : ".cideploy.yaml",
       "type" : "parameter",
       "longCommand" : "config-file",
       "shortCommand" : "conf",

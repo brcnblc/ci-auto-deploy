@@ -9,7 +9,9 @@ const {copyFile, disableLine, parseYmlFile,
 
 // Write last deploy parameters into yaml file
 function writeLastDeployedFile(file, field, value){
-  dumpYmlFile(file, field, value)
+  let content = {}
+  content[field]=value;
+  dumpYmlFile(file, content)
 }
 
 // eb Sync command
@@ -54,9 +56,9 @@ async function runSpawn(command, args, simulate) {
 // Init Deploy
 async function initDeploy(kwArgs){
   let exitCode;
-  
-  const deployConfiguration = parseYmlFile(kwArgs.configFile)
-  const configuration = evaluateYaml (deployConfiguration)
+  const ci = evaluateYaml(parseYmlFile(kwArgs.configFile))
+  const deployConfig = parseYmlFile(ci.config.awsConfigFile)
+  const configuration = evaluateYaml (deployConfig, {...ci})
   let {cloudProvider, cloudService, cloudTool, application, environment, appConfig} = kwArgs;
   
   const mainConfigName = camelCase(`${cloudProvider}_${cloudService}_${cloudTool}`,'_');
@@ -94,7 +96,7 @@ async function initDeploy(kwArgs){
         const appConfiguration = _.get(environmentConfig, appConfigPath);
         if (!appConfiguration){
           throw (`${application} ${appConfig} configuration for ${environment} environment not found !`);}
-        exitCode = await deploy(_kwArgs, appConfiguration);
+        exitCode = await deploy(_kwArgs, appConfiguration, ci.config);
         scnt++;
       } catch (err) {
         error = true;
@@ -123,14 +125,14 @@ async function initDeploy(kwArgs){
     if (!appConfiguration){
       throw (`${application} ${appConfig} configuration for ${environment} environment not found !`);}
     console.log(`\n----- Deploying ${application} ${appConfig} configuration into ${environment} environment -----\n`)
-    exitCode = await deploy(kwArgs, appConfiguration)
+    exitCode = await deploy(kwArgs, appConfiguration, ci.config)
     console.log(`\n----- End of deployment ${application} ${appConfig} into ${environment} environment -----\n`)
   }
   return exitCode;
 }
 
 // DEPLOY Main Function
-async function deploy(kwArgs, appConfiguration) {
+async function deploy(kwArgs, appConfiguration, ciConfig) {
   
   let exitCode;
   
@@ -171,7 +173,16 @@ async function deploy(kwArgs, appConfiguration) {
 
   // Write last ran succesfull configuration
   if (exitCode == 0){
-    writeLastDeployedFile(kwArgs.lastRunFile, 'kwArgs', kwArgs)
+    
+    let lastRunFile;
+    
+    if (ciConfig && ciConfig.lastRunFile && ciConfig.deployPath ){
+      lastRunFile = ciConfig.deployPath + '/' + ciConfig.lastRunFile
+    } else {
+      lastRunFile = kwArgs.lastRunFile;
+    }
+    
+    writeLastDeployedFile(lastRunFile, 'kwArgs', kwArgs)
   }
 
   return exitCode;
