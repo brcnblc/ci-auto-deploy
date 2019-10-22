@@ -51,8 +51,17 @@
       "type" : "parameter",
       "longCommand" : "config-file",
       "shortCommand" : "conf",
-      "definition" : "Defines the file which includes deployment configurations. (*.yaml)",
+      "definition" : "Defines the file which includes configuration defaults. (*.yaml)",
       "usage" : "<PathToConfigFile>"
+    },
+    "config-path" : {
+      "variableName" : "configPath",
+      "defaultValue" : ".ciautodeploy",
+      "type" : "parameter",
+      "longCommand" : "config-path",
+      "shortCommand" : "cp",
+      "definition" : "Defines the configuration path which includes deployment configuration files.",
+      "usage" : "<PathOfDeploymentConfigurations>"
     },
     "force-create" : {
       "variableName" : "forceCreate",
@@ -155,12 +164,12 @@
     },
     "last-run-file" : {
       "variableName" : "lastRunFile",
-      "defaultValue" : ".deploy/.last_run.yaml",
+      "defaultValue" : "cilastrun.yaml",
       "type" : "parameter",
       "longCommand" : "last-run-file",
       "shortCommand" : "lrf",
       "definition" : "Defines the name of the file in which last ran arguments will be saved.",
-      "usage" : "<Path/FileName.json>"
+      "usage" : "<LastRunfile.yaml>"
     },
     "region" : {
       "variableName" : "region",
@@ -227,12 +236,66 @@
     },
     "launch-file" : {
       "variableName" : "launchFile",
-      "defaultValue" : ".deploy/aws_launch.yaml",
+      "defaultValue" : "aws_launch.yaml",
       "type" : "parameter",
       "longCommand" : "launch-file",
       "shortCommand" : "lnf",
-      "definition" : "Defines the file which includes launch configurations. (*.yaml)",
-      "usage" : "<PathToLaunchFile>"
+      "definition" : "Defines the file which includes launch configurations.",
+      "usage" : "<LaunchFile.yaml>"
+    },
+    "deploy-config-file" : {
+      "variableName" : "deployConfigFile",
+      "defaultValue" : "aws_config.yaml",
+      "type" : "parameter",
+      "longCommand" : "deploy-config-file",
+      "shortCommand" : "dcf",
+      "definition" : "Defines the file which includes deployment configurations.",
+      "usage" : "<DeployConfigFile.yaml>"
+    },
+    "environment-variable" : {
+      "variableName" : "environmentVariable",
+      "defaultValue" : "CI_AUTO_DEPLOY",
+      "type" : "parameter",
+      "longCommand" : "environment-variable",
+      "shortCommand" : "ev",
+      "definition" : "Defines the environment variable name to be used.",
+      "usage" : "<EnvironmentVariableName>"
+    },
+    "secrets-path" : {
+      "variableName" : "secretsPath",
+      "defaultValue" : ".cisecrets",
+      "type" : "parameter",
+      "longCommand" : "secrets-path",
+      "shortCommand" : "sp",
+      "definition" : "Defines the path where token and password files are stored.",
+      "usage" : "<SecretsPath>"
+    },
+    "password-file" : {
+      "variableName" : "passwordFile",
+      "defaultValue" : ".cipass.yaml",
+      "type" : "parameter",
+      "longCommand" : "password-file",
+      "shortCommand" : "pf",
+      "definition" : "Defines the file name where ci-auto-deploy passwords are stored.",
+      "usage" : "<PasswordFileName.yaml>"
+    },
+    "token-files" : {
+      "variableName" : "tokenFiles",
+      "defaultValue" : "{dev: .dev_tokens.yaml, staging: .stg_tokens.yaml, production: .prod_tokens.yaml}",
+      "type" : "parameter",
+      "longCommand" : "token-files",
+      "shortCommand" : "tf",
+      "definition" : "Defines the token file names with respect to environment.",
+      "usage" : "<\"{env1: tokens1.yaml, env2: tokens2.yaml , ...}\">"
+    },
+    "env-path" : {
+      "variableName" : "envPath",
+      "defaultValue" : ".cienvs",
+      "type" : "parameter",
+      "longCommand" : "env-path",
+      "shortCommand" : "ep",
+      "definition" : "Defines the path where environment files are stored.",
+      "usage" : "<EnvPath>"
     }
   },
   "positionals" : ["cloud-provider", "application", "environment", "env-suffix", "app-config"],

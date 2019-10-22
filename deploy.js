@@ -3,20 +3,73 @@ const argParse = require('./argParse');
 const argDefinitions = require('./arguments.json');
 const Print = require('./library').Print.prototype;
 const print = function (txt){Print.print(txt)};
+const { evaluateYaml, parseYmlFile } = require('./helper')
+const _ = require('lodash')
 
-async function run (argString) {
-
-  //Parse Args
-  let kwArgs = {};
-  try {kwArgs = argParse(argString, argDefinitions);}
+function parseArgs(argString, argDefinitions, mode){
+  try {
+    return argParse(argString, argDefinitions, mode)
+    }
   catch (err){
-    print(err);
-    print(`Check Command Line Options :`);
-    print(`${argString}`);
+    console.error(err);
+    if (!err.includes('Error: Unknown parse mode')){
+      console.error(`Check Command Line Options :`);
+      console.error(`${argString}`);
+    }
     process.exit(1);
   }
 
+}
+
+function evaluateVariables(argString){
+  
+  let kwArgs = {};
+
+  //Parse Defaults with command line arguments
+  _.merge(kwArgs, parseArgs(argString, argDefinitions))
+
+  
+  //Merge configuartion file defaults
+  { 
+    const configFile = kwArgs.configPath + '/' + kwArgs.configFile
+    const configContent = parseYmlFile(configFile, raiseOnError = false)
+
+    // Extract file contents if exists
+    if (configContent && configContent.errno == -2){
+      console.error (`Error : Configuration file ${configFile} not found.`)
+      throw -1
+    }
+  
+    const ci = evaluateYaml(configContent, {args:kwArgs})
+    for ([key,value] of Object.entries(ci)){
+      _.merge(kwArgs, value)
+    }
+  }
+  
+  //Merge Environment Variables
+  {
+    const env = process.env[kwArgs.environmentVariable]
+    if (env && env != ''){
+      _.merge(kwArgs, parseArgs(env, argDefinitions, mode = 'argsonly'))
+    }
+  }
+
+  //Merge Command Line Arguments 
+  {
+    if (argString && argString != ''){
+      _.merge(kwArgs, parseArgs(argString, argDefinitions, mode = 'argsonly'))
+    }
+  }
+  
+  return kwArgs
+}
+
+async function run (argString) {
+
+  const kwArgs = evaluateVariables(argString);
+  
   let exitcode;
+
   try{
     exitcode = await initDeploy(kwArgs);
   } catch (err){
@@ -51,15 +104,25 @@ if (__name__ == 'deploy.js'){
     exit(exitCode)
   }
 
-  function exit(exitCode){
-    if (exitCode == 0){
+  function exit(error){
+    let exitCode=1;
+    if (error == 0){
       console.log('\nProcess exited succesfully.\n');
+      exitCode=0;
     }
     else {
-      console.error('\nProcess exited with exit code', exitCode, '\n');
+      if (typeof error == 'object' && 'stack' in error){
+        console.error(error.stack, '\n');
+      } else if (typeof error =='string'){
+        console.error(error)
+      } else if (typeof error == 'number'){
+        exitCode = error
+      }
+      console.error('\nProcess exited with non zero exit code', '\n');
+      
     }
-
-    process.exit(exitCode);
+    process.exit(exitCode)
+   
   }
 
 }

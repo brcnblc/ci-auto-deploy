@@ -57,15 +57,17 @@ function parseJsonFile(file){
   }
 }
 
-function parseYmlFile(file){
+function parseYmlFile(file, raiseOnError ){
   try {
     let strFileContents = fs.readFileSync(file, 'utf8')
     return yaml.load(strFileContents)
 
   } catch (err){
-    if (err.errno != -2){
-      console.error(err);
+    if (err.errno != -2 || raiseOnError){
+      //console.error(err);
       throw (err)
+    } else {
+      return err
     }
   }
 }
@@ -223,17 +225,32 @@ function evaluateYaml(content, variables) {
         let a=1
       }
       else if (item == 'readYaml|'){
-        let [file, key] = modifiedValue.split(',');
-        let dict = evaluateYaml(parseYmlFile(file));
+        let file, key, subContext_;
+        if (Array.isArray(modifiedValue)){
+          [file, key, subContext_] = modifiedValue
+        } else {
+          [file, key, subContext_] = modifiedValue.split(',')
+        }
+        
+        let subContext;
+        if (subContext_){
+          subContext = yaml.load(subContext_.replace(':\\',':'))
+        }
+        let yamlFileContent = parseYmlFile(file)
+        if (yamlFileContent && yamlFileContent.errno == -2){
+          throw(`Yaml Error at ${currentPath} \n ${yamlFileContent.message}`)
+        }
+        let dict = evaluateYaml(yamlFileContent, {...context, ...subContext});
         let dictValue = dict[key];
         let currentValue = nestedGetPathList(target, parentList)
         matchedVariableArray.forEach(v=>{
-          delete(currentValue[v])
+          if (v.substr(-1)=='$'){
+            delete(currentValue[v])
+          }
+          
         })
         _.merge(currentValue,dictValue)
-        //nestedSetPathList(target, parentList, dictValue)
-        
-        let a=1
+
       }
       else {
         // assign to an variable
@@ -269,5 +286,6 @@ function dateSuffix(sep = '_'){
   return datex
  
  }
+
 module.exports = {copyFile, disableLine, listFiles, parseJsonFile, parseYmlFile, 
   sleep, passwordPrompt, capitalize, camelCase, evaluateYaml, dumpYmlFile, dateSuffix}

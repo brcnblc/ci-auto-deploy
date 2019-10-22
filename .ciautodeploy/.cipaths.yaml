@@ -1,0 +1,14 @@
+--- # Configure Paths and Files
+
+config:
+  configPath: ${configPath}
+  envPath: ${args.envPath}
+  awsLaunchFile: ${configPath}/aws_launch.yaml
+  awsConfigFile: ${configPath}/aws_config.yaml
+  lastRunFile: ${configPath}/${args.lastRunFile}
+  secretsPath: ${args.secretsPath}
+  passwordFile: ${secretsPath}/${args.passwordFile}
+  tokenFiles: 
+    dev: ${args.secretsPath}/${args.tokenFiles.dev}
+    staging: ${args.secretsPath}/${args.tokenFiles.staging}
+    production: ${args.secretsPath}/${args.tokenFiles.production}

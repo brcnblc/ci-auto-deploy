@@ -15,10 +15,14 @@ function writeLastDeployedFile(file, field, value){
 }
 
 // eb Sync command
-function eb(args, returnError = false, stdin = null) {
+function eb(args, returnError = false, stdin = null, simulate) {
   let result;
-  result = spawnSync(`eb ${args}`, {encoding:'utf8', shell:true, input:stdin});
-
+  if (!simulate){
+    result = spawnSync(`eb ${args}`, {encoding:'utf8', shell:true, input:stdin});
+  } else {
+    result = spawnSync(`eb ${args} --help`, {encoding:'utf8', shell:true, input:stdin});
+  }
+  
   if (result.status !=0 &! returnError){
     throw result.stdout || result.stderr
   } else {
@@ -53,18 +57,37 @@ async function runSpawn(command, args, simulate) {
 
 }
 
+// Write last ran configuration 
+function writeLastRun(kwArgs){
+
+  let lastRunFile;
+  
+  if (kwArgs && kwArgs.lastRunFile && kwArgs.deployPath ){
+    lastRunFile = kwArgs.deployPath + '/' + kwArgs.lastRunFile
+  } else {
+    lastRunFile = kwArgs.lastRunFile;
+  }
+  
+  writeLastDeployedFile(lastRunFile, 'kwArgs', kwArgs)
+
+}
 // Init Deploy
 async function initDeploy(kwArgs){
   let exitCode;
-  const ci = evaluateYaml(parseYmlFile(kwArgs.configFile))
-  const deployConfig = parseYmlFile(ci.config.awsConfigFile)
-  const configuration = evaluateYaml (deployConfig, {...ci})
+  //const ci = evaluateYaml(parseYmlFile(kwArgs.configFile))
+  const deployConfig = parseYmlFile(kwArgs.awsConfigFile)
+  const configuration = evaluateYaml (deployConfig, {args:kwArgs})
   let {cloudProvider, cloudService, cloudTool, application, environment, appConfig} = kwArgs;
   
   const mainConfigName = camelCase(`${cloudProvider}_${cloudService}_${cloudTool}`,'_');
   const mainConfig = configuration.cloudProvider.aws.platform[mainConfigName]
   const environmentConfig = mainConfig.environment[environment]
+  if (!environmentConfig){
+    throw(`Environment configuration for '${environment}' not found.`)
+  }
+
   const envGroups = environmentConfig.group
+  
   
   // Ask Password
   if (!kwArgs.debug){
@@ -96,7 +119,7 @@ async function initDeploy(kwArgs){
         const appConfiguration = _.get(environmentConfig, appConfigPath);
         if (!appConfiguration){
           throw (`${application} ${appConfig} configuration for ${environment} environment not found !`);}
-        exitCode = await deploy(_kwArgs, appConfiguration, ci.config);
+        exitCode = await deploy(_kwArgs, appConfiguration);
         scnt++;
       } catch (err) {
         error = true;
@@ -125,14 +148,20 @@ async function initDeploy(kwArgs){
     if (!appConfiguration){
       throw (`${application} ${appConfig} configuration for ${environment} environment not found !`);}
     console.log(`\n----- Deploying ${application} ${appConfig} configuration into ${environment} environment -----\n`)
-    exitCode = await deploy(kwArgs, appConfiguration, ci.config)
+    exitCode = await deploy(kwArgs, appConfiguration)
     console.log(`\n----- End of deployment ${application} ${appConfig} into ${environment} environment -----\n`)
   }
+
+  // Write to last run file if process is succesfull
+  if (exitCode == 0){
+    writeLastRun(kwArgs)
+  }
+
   return exitCode;
 }
 
 // DEPLOY Main Function
-async function deploy(kwArgs, appConfiguration, ciConfig) {
+async function deploy(kwArgs, appConfiguration) {
   
   let exitCode;
   
@@ -169,20 +198,6 @@ async function deploy(kwArgs, appConfiguration, ciConfig) {
     default:
       console.error ('Deployment Function Does not exist !');
       throw (-1);
-  }
-
-  // Write last ran succesfull configuration
-  if (exitCode == 0){
-    
-    let lastRunFile;
-    
-    if (ciConfig && ciConfig.lastRunFile && ciConfig.deployPath ){
-      lastRunFile = ciConfig.deployPath + '/' + ciConfig.lastRunFile
-    } else {
-      lastRunFile = kwArgs.lastRunFile;
-    }
-    
-    writeLastDeployedFile(lastRunFile, 'kwArgs', kwArgs)
   }
 
   return exitCode;
@@ -249,7 +264,8 @@ async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
     // init eb 
     let ebCmd = `init ${application} --region ${region} --platform Node.js --keyname aws`
     console.log(`\nInitializing elasticbeanstalk with ${ebCmd}`)
-    result = eb(ebCmd)
+    result = eb(ebCmd, null, null, kwArgs.simulate)
+    console.log(result)
 
     // Copy elastic beans talk config file
     //copyFile(configFile, '.elasticbeanstalk/config.yml');

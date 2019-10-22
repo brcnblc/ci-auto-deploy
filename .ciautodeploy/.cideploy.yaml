@@ -1,0 +1,10 @@
+--- # CI-AUTO-DEPLOY Configuration File
+config:
+  configPath: ${args.configPath}
+  readYaml|: ${configPath}/.cipaths.yaml,config,{configPath:\ ${configPath}}
+
+defaults:
+  cloudProvider: aws
+  region: eu-central-1
+  environment: staging
+

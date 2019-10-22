@@ -1,15 +1,28 @@
-function parse (argStr, argDefs) {
-  const kwargs = {};
-  const { positionals } = argDefs
-  let args = evalStrings(argStr || '')
+const yaml = require('js-yaml');
 
+function parse (argStr, argDefs, mode='all') {
+  if (!(['all', 'defaults', 'argsonly'].includes(mode))){
+    throw (`Error: Unknown parse mode '${mode}' in parse function arguments.`)}
+  // mode: all, defaults, argsonly
+  const kwargs = {};
+  
   //Assign Default Values
-  for (let key in argDefs.arguments) {
-    let argument = argDefs.arguments[key];
-    if ('defaultValue' in argument){
-      kwargs[argument.variableName] = argument.defaultValue;
+  if ((mode == 'all' || mode == 'defaults') && mode != 'argsonly'){
+    for (let key in argDefs.arguments) {
+      let argument = argDefs.arguments[key];
+      if ('defaultValue' in argument){
+        try{
+          const parsed = yaml.load(argument.defaultValue)
+          kwargs[argument.variableName] = parsed
+        } catch (err){
+          kwargs[argument.variableName] = argument.defaultValue
+        }
+      }
     }
   }
+
+  const { positionals } = argDefs
+  let args = evalStrings(argStr || '')
 
   //Help
   if (args.includes('--help') || args.includes('-h')){
@@ -21,6 +34,9 @@ function parse (argStr, argDefs) {
 
   if (!argDefs) {throw('No Argument Definition provided.')}
 
+  if (mode == 'defaults'){
+    return kwargs
+  }
 
   //evaluate positional arguments
   let posArgEnds = args.findIndex(v=>v.search(/^-+/)>-1);
@@ -60,7 +76,13 @@ function parse (argStr, argDefs) {
           let paramValue;
           try {paramValue = args[i + 1]}catch (err){throw err}
           if (paramValue) {
-            kwargs[argument.variableName] = paramValue
+            try{
+              const parsed = yaml.load(paramValue)
+              kwargs[argument.variableName] = parsed
+            } catch (err){
+              kwargs[argument.variableName] = paramValue
+            }
+            
             cnt += 2;
           } else {
             throw (`Argument ${argument.longCommand} should have a value ${argument.usage}.`)
