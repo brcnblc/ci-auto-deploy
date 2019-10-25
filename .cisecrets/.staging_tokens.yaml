@@ -4,13 +4,13 @@ defaults:
 
 staging:
   defaults:
-    inherit|: defaults
+    inherit|: ${defaults}
 
     MY_API_KEY: c55a09cb70e31dc63462d5bd8dc3526f
     MY_SECRET_KEY: f5271ad2e86150e7a4357f9a3dfc682f
   
-  api1:
+  myApi1:
     inherit|: ${staging.defaults}
     
-    API1_KEY2: 0e31dc63462d5c55a09cb7bd8dc3526f
-    SECRET_KEY2: 0e7a4357f9f5271ad2e8615a3dfc682f
+    API1_KEY: 0e31dc63462d5c55a09cb7bd8dc3526f
+    API1_SECRET_KEY: 0e7a4357f9f5271ad2e8615a3dfc682f

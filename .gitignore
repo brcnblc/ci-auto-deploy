@@ -1,6 +1,5 @@
 node_modules
 *.lock
-last_run.json
 
 # Elastic Beanstalk Files
 .elasticbeanstalk/*
@@ -9,5 +8,4 @@ last_run.json
 .ebignore
 
 # ci-auto-deploy
-.ciautodeploy/cilastrun.yaml
-
+.cilastrun.yaml

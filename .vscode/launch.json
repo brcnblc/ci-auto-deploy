@@ -10,7 +10,7 @@
       "name": "Deploy",
       "program": "${workspaceFolder}/deploy.js",
       "cwd": "${workspaceFolder}",
-      "args": ["aws myApi1 staging", "--debug", "--simulate"],
+      "args": ["aws myApi1 staging", "--debug", "--simulate", "--passwords", "\"{staging: staging}\""],
       "env": {"CI_AUTO_DEPLOY": ""}
     },
     {
@@ -19,7 +19,16 @@
       "name": "Deploy All",
       "program": "${workspaceFolder}/deploy.js",
       "cwd": "${workspaceFolder}",
-      "args": ["aws", "all", "staging", "--debug", "--simulate"],
+      "args": ["aws", "all", "staging", "--debug", "--simulate", "--passwords", "\"{staging: staging}\""],
+      "env": {"CI_AUTO_DEPLOY": ""}
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Deploy no Args",
+      "program": "${workspaceFolder}/deploy.js",
+      "cwd": "${workspaceFolder}",
+      "args": ["--debug","--simulate", "--passwords", "\"{staging: staging}\""],
       "env": {"CI_AUTO_DEPLOY": ""}
     }
   ]

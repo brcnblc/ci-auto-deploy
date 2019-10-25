@@ -2,7 +2,7 @@
   "arguments" : {
     "cloud-provider" : {
       "variableName" : "cloudProvider",
-      "defaultValue" : "aws",
+      "defaultValue" : "last || aws",
       "type" : "parameter",
       "longCommand" : "cloud-provider",
       "shortCommand" : "cp",
@@ -11,25 +11,25 @@
     },
     "cloud-service" : {
       "variableName" : "cloudService",
-      "defaultValue" : "ebt",
+      "defaultValue" : "last",
       "type" : "parameter",
       "longCommand" : "cloud-service",
       "shortCommand" : "cs",
       "definition" : "Defines the cloud service infrastructure to deploy.",
       "usage" : ["ebt", "mcd"]
     },
-    "cloud-tool" : {
-      "variableName" : "cloudTool",
-      "defaultValue" : "eb",
+    "command-line-tool" : {
+      "variableName" : "commandLineTool",
+      "defaultValue" : "last",
       "type" : "parameter",
-      "longCommand" : "cloud-tool",
-      "shortCommand" : "ct",
-      "definition" : "Defines the cloud SDK tool to deploy.",
-      "usage" : ["eb", "code-commit"]
+      "longCommand" : "command-line-tool",
+      "shortCommand" : "clt",
+      "definition" : "Defines the cloud SDK tool to use in deployment procedure.",
+      "usage" : ["eb", "codecommit"]
     },
     "application" : {
       "variableName" : "application",
-      "defaultValue" : "last",
+      "defaultValue" : "last || all",
       "type" : "parameter",
       "longCommand" : "application",
       "shortCommand" : "app",
@@ -38,7 +38,7 @@
     },
     "environment" : {
       "variableName" : "environment",
-      "defaultValue" : "staging",
+      "defaultValue" : "last || staging",
       "type" : "parameter",
       "longCommand" : "environment",
       "shortCommand" : "env",
@@ -164,7 +164,7 @@
     },
     "last-run-file" : {
       "variableName" : "lastRunFile",
-      "defaultValue" : "cilastrun.yaml",
+      "defaultValue" : ".cilastrun.yaml",
       "type" : "parameter",
       "longCommand" : "last-run-file",
       "shortCommand" : "lrf",
@@ -236,7 +236,7 @@
     },
     "launch-file" : {
       "variableName" : "launchFile",
-      "defaultValue" : "aws_launch.yaml",
+      "defaultValue" : "last",
       "type" : "parameter",
       "longCommand" : "launch-file",
       "shortCommand" : "lnf",
@@ -245,7 +245,7 @@
     },
     "deploy-config-file" : {
       "variableName" : "deployConfigFile",
-      "defaultValue" : "aws_config.yaml",
+      "defaultValue" : "last",
       "type" : "parameter",
       "longCommand" : "deploy-config-file",
       "shortCommand" : "dcf",
@@ -281,7 +281,7 @@
     },
     "token-files" : {
       "variableName" : "tokenFiles",
-      "defaultValue" : "{dev: .dev_tokens.yaml, staging: .stg_tokens.yaml, production: .prod_tokens.yaml}",
+      "defaultValue" : "{testing: .testing_tokens.yaml, staging: .staging_tokens.yaml, production: .production_tokens.yaml}",
       "type" : "parameter",
       "longCommand" : "token-files",
       "shortCommand" : "tf",
@@ -296,6 +296,42 @@
       "shortCommand" : "ep",
       "definition" : "Defines the path where environment files are stored.",
       "usage" : "<EnvPath>"
+    },
+    "passwords" : {
+      "variableName" : "passwords",
+      "defaultValue" : null,
+      "type" : "parameter",
+      "longCommand" : "passwords",
+      "shortCommand" : "pwd",
+      "definition" : "Defines the passwords for respective environments",
+      "usage" : "<{environment1: password1, environment2: password2}>"
+    },
+    "password-hashs" : {
+      "variableName" : "passwordHashs",
+      "defaultValue" : null,
+      "type" : "parameter",
+      "longCommand" : "password-hashs",
+      "shortCommand" : "pwh",
+      "definition" : "Defines the password hashs for respective environments",
+      "usage" : "<{environment1: passwordHash1, environment2: passwordHash2}>"
+    },
+    "copy-secrets" : {
+      "variableName" : "copySecrets",
+      "defaultValue" : true,
+      "type" : "boolean",
+      "longCommand" : "copy-secrets",
+      "shortCommand" : "csr",
+      "definition" : "If specified, copies tokens from tokens file into environment file.",
+      "usage" : null
+    },
+    "env-file" : {
+      "variableName" : "envFile",
+      "defaultValue" : ".env",
+      "type" : "parameter",
+      "longCommand" : "env-file",
+      "shortCommand" : "enf",
+      "definition" : "Target environment file name.Always '.env' for nodejs environment.",
+      "usage" : "<EnvFileName>"
     }
   },
   "positionals" : ["cloud-provider", "application", "environment", "env-suffix", "app-config"],

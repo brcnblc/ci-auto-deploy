@@ -1,11 +1,17 @@
 --- # Configure Paths and Files
 
 config:
-  configPath: ${configPath}
+  path: ${configPath}
   envPath: ${args.envPath}
-  awsLaunchFile: ${configPath}/aws_launch.yaml
-  awsConfigFile: ${configPath}/aws_config.yaml
-  lastRunFile: ${configPath}/${args.lastRunFile}
+  
+  cloud/:
+    aws:
+      path : ${configPath}/.cloud/.aws
+      defaultsFile : ${path}/aws_defaults.yaml
+      readYaml|: ${defaultsFile},defaults,{path:\ ${path}}
+   
+  
+  lastRunFile: ${args.lastRunFile}
   secretsPath: ${args.secretsPath}
   passwordFile: ${secretsPath}/${args.passwordFile}
   tokenFiles: 

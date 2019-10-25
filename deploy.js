@@ -31,7 +31,7 @@ function evaluateVariables(argString){
   
   //Merge configuartion file defaults
   { 
-    const configFile = kwArgs.configPath + '/' + kwArgs.configFile
+    const configFile = kwArgs.configFile
     const configContent = parseYmlFile(configFile, raiseOnError = false)
 
     // Extract file contents if exists

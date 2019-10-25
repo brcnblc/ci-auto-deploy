@@ -3,9 +3,11 @@
 const { spawn, spawnSync } = require("child_process"); // Syncronous execution
 const fs = require("fs");
 const { git, nested } = require('./library');
+const deepCopyPro  = require('./deepCopyPro')
 const _ = require('lodash');
-const {copyFile, disableLine, parseYmlFile, 
-  sleep, passwordPrompt, camelCase, evaluateYaml, dumpYmlFile, dateSuffix} = require('./helper')
+const md5 = require('blueimp-md5');
+const {copyFile, disableLine, parseYmlFile, sleep, passwordPrompt, startingPrompt,
+  camelCase, evaluateYaml, dumpYmlFile, dateSuffix} = require('./helper')
 
 // Write last deploy parameters into yaml file
 function writeLastDeployedFile(file, field, value){
@@ -61,38 +63,136 @@ async function runSpawn(command, args, simulate) {
 function writeLastRun(kwArgs){
 
   let lastRunFile;
+  const exceptionList = ['cloud']
   
   if (kwArgs && kwArgs.lastRunFile && kwArgs.deployPath ){
     lastRunFile = kwArgs.deployPath + '/' + kwArgs.lastRunFile
   } else {
     lastRunFile = kwArgs.lastRunFile;
   }
-  
-  writeLastDeployedFile(lastRunFile, 'kwArgs', kwArgs)
+  const copyOfkwArgs = deepCopyPro(kwArgs, {omitKeys:exceptionList})
+  writeLastDeployedFile(lastRunFile, 'kwArgs', copyOfkwArgs)
 
 }
-// Init Deploy
+
+function evaluateSubConfig(kwArgs, lastRunConfig, configKey, forceDefaults){
+    
+  if (kwArgs[configKey].includes('last')) {
+    // If it includes || and forceDefaults = false
+    const evalarg = kwArgs[configKey].split('||')
+    if (evalarg.length == 2 &! forceDefaults && lastRunConfig.errno == -2){
+      kwArgs[configKey] = evalarg[1].trim()
+      return
+    }
+
+    // If it does not include ||
+    if (lastRunConfig.errno == -2 || forceDefaults) {
+      const {cloudProvider, cloud} = kwArgs;
+      const cloudProviderDefaults = cloud && cloud[cloudProvider];
+      if (cloudProviderDefaults) {
+        const configKeyDefault = cloudProviderDefaults[configKey];
+        if (configKeyDefault){
+          kwArgs[configKey] = configKeyDefault
+        } else {
+          throw (`Please indicate ${configKey} explicitly or configure it in the defaults file.`)
+        }
+      } else {
+        throw (`Please indicate ${configKey} explicitly or create a cloud defaults file.`)
+      }
+    } else {
+      kwArgs[configKey] = lastRunConfig.kwArgs[configKey]
+    }
+  }
+}
+
+function evaluateLast(kwArgs, forceDefaults = false) {
+  // Read and apply last ran configuration
+  const lastRunConfig = parseYmlFile(kwArgs.lastRunFile)
+
+  // Evaluate last ran cloud provider
+  if (kwArgs.cloudProvider.includes('last')) {
+    if (lastRunConfig.errno == -2) {
+      const evalarg = kwArgs.cloudProvider.split('||')
+      if (evalarg.length == 1){
+        throw (`Please indicate cloud provider explicitly with --cloud-provider argument or define it under defaults section of 
+        "${kwArgs.configFile}" file such as :
+        defaults:
+          cloudProvider: myDefaultProvider`)
+      } else {
+        kwArgs.cloudProvider = evalarg[1].trim()
+      }
+      
+    } else {
+      kwArgs.cloudProvider = lastRunConfig.kwArgs.cloudProvider
+    }
+  }
+
+  const lastConfigKeys = ['application', 'environment', 'cloudService', 'commandLineTool', 'launchFile', 'deployConfigFile']
+
+  lastConfigKeys.forEach(item => evaluateSubConfig(kwArgs, lastRunConfig, item, forceDefaults))
+  
+}
+
+function checkFiles(kwArgs, raiseError = false){
+  const fileList = [kwArgs.launchFile, kwArgs.deployConfigFile]
+  for (let i=0;i<fileList.length;i++){
+    if (!fs.existsSync(fileList[i])){
+      if (raiseError){
+        throw(`File ${fileList[i]} does not exist`)
+      }
+      return false
+    }
+  }
+
+  return true;
+}
+
+function printStartingParameters(kwArgs){
+  console.log(`
+Deployment will start with following parameters:
+Cloud Provider: ${kwArgs.cloudProvider}
+Cloud Service: ${kwArgs.cloudService}
+Command Line Tool: ${kwArgs.commandLineTool} 
+Application: ${kwArgs.application}
+environment: ${kwArgs.environment}
+        `)
+}
+
+// ----  INIT DEPLOY ------
 async function initDeploy(kwArgs){
   let exitCode;
-  //const ci = evaluateYaml(parseYmlFile(kwArgs.configFile))
-  const deployConfig = parseYmlFile(kwArgs.awsConfigFile)
-  const configuration = evaluateYaml (deployConfig, {args:kwArgs})
-  let {cloudProvider, cloudService, cloudTool, application, environment, appConfig} = kwArgs;
+
+  // Evaluate last ran configuration
+  evaluateLast(kwArgs);
   
-  const mainConfigName = camelCase(`${cloudProvider}_${cloudService}_${cloudTool}`,'_');
-  const mainConfig = configuration.cloudProvider.aws.platform[mainConfigName]
-  const environmentConfig = mainConfig.environment[environment]
-  if (!environmentConfig){
-    throw(`Environment configuration for '${environment}' not found.`)
+  let filesExist = checkFiles(kwArgs, false)
+  if (!filesExist){
+    evaluateLast(kwArgs, true)
   }
+
+  checkFiles(kwArgs, true)
+
+  const deployConfig = parseYmlFile(kwArgs.deployConfigFile)
+  const configuration = evaluateYaml (deployConfig, {args:kwArgs})
+  let {cloudProvider, cloudService, commandLineTool, application, environment, appConfig} = kwArgs;
+  
+  const mainConfigName = camelCase(`${cloudProvider}_${cloudService}_${commandLineTool}`,'_');
+  const mainConfig = configuration.cloudProvider.aws.platform[mainConfigName]
+  if (!mainConfig){
+    throw (`Configuration for ${mainConfigName} not found in ${kwArgs.deployConfigFile}`)
+  }
+  const environmentSection = mainConfig.environment
+  if (!environmentSection){
+    throw (`environment section not found in ${kwArgs.deployConfigFile}`)
+  }
+  const environmentConfig = environmentSection[environment]
+  if (!environmentConfig){
+    throw (`Configuration for ${environment} environment not found in ${kwArgs.deployConfigFile}`)
+  }
+  
 
   const envGroups = environmentConfig.group
   
-  
-  // Ask Password
-  if (!kwArgs.debug){
-    await passwordPrompt();
-  }
   
   // Batch Processiong
   if (kwArgs.application in envGroups){
@@ -108,7 +208,7 @@ async function initDeploy(kwArgs){
     for (let appName of items){
       cnt++;
 
-      const _kwArgs = Object.assign({}, kwArgs)
+      const _kwArgs = deepCopyPro(kwArgs)
       
       _kwArgs.application = appName;
       console.log(`\nStep ${cnt} of ${items.length}`)
@@ -143,13 +243,64 @@ async function initDeploy(kwArgs){
     }
     
   } else {
-    const appConfigPath = ['application', application, 'configuration', appConfig]
-    const appConfiguration = _.get(environmentConfig, appConfigPath);
-    if (!appConfiguration){
-      throw (`${application} ${appConfig} configuration for ${environment} environment not found !`);}
-    console.log(`\n----- Deploying ${application} ${appConfig} configuration into ${environment} environment -----\n`)
-    exitCode = await deploy(kwArgs, appConfiguration)
-    console.log(`\n----- End of deployment ${application} ${appConfig} into ${environment} environment -----\n`)
+      // Extract configuration
+      const appConfigPath = ['application', application, 'configuration', appConfig]
+      const appConfiguration = _.get(environmentConfig, appConfigPath);
+      
+      // Check if configuration exists
+      if (!appConfiguration){
+        throw (`${application} ${appConfig} configuration for ${environment} environment not found !`);
+      }
+      
+      // Print starting args
+      printStartingParameters(kwArgs)
+
+      // ask password
+      const passwordFileContent = parseYmlFile(kwArgs.passwordFile)
+
+      if ((appConfiguration.prompt == 'password' || environment == 'production')){
+        if (passwordFileContent.errno == -2){throw(`Error: Password file ${kwArgs.passwordFile} not found`)}
+        const passwords = passwordFileContent.passwords
+        const environmentPassword = passwords && passwords[environment]
+        
+        if (!environmentPassword) {throw(`Password definition for ${environment} environment not found in ${kwArgs.passwordFile}`)}
+        
+        let passOk = false;
+        
+        if ((!kwArgs.passwords || kwArgs.passwords == null) && (!kwArgs.passwordHashs || kwArgs.passwordHashs == null)){
+          passOk = await passwordPrompt(environmentPassword, 3);
+          if (!passOk){throw('Wrong Password in user entry.')}
+        } else if (kwArgs.passwords != null){
+          if (!kwArgs.passwords[environment]){throw(`--passwords argument does not contain definition for ${environment} environment.`)}
+          passOk = (md5(kwArgs.passwords[environment]) == environmentPassword)
+          if (!passOk){throw(`Wrong Password in --passwords argument.`)}
+
+        } else if (kwArgs.passwordHashs != null){
+          if (!kwArgs.passwordHashs[environment]){throw(`--passwordHashs argument does not contain definition for ${environment} environment.`)}
+          passOk = (kwArgs.passwordHashs[environment] == environmentPassword);
+          if (!passOk){throw(`Wrong Password in --password-hashs argument.`)}
+        }
+        
+      } else if (appConfiguration.prompt == 'prompt'){
+        const userInput = await startingPrompt('y')
+        if (!userInput){throw ('Process aborted on user input.')}
+        
+      }
+      
+      // Check if token file exists if copy-secrets is true
+      if (kwArgs.copySecrets){
+        const tokenFiles = kwArgs.tokenFiles;
+        const environmentTokenFile = tokenFiles && tokenFiles[environment]
+        if (!environmentTokenFile){throw(`Token file definition for ${environment} could not be found in --token-files argument`)}
+        const tokenFileContent = parseYmlFile(environmentTokenFile)
+        if (tokenFileContent.errno == -2){throw(`Token file ${environmentTokenFile} does not exist.`)}
+      }
+
+      
+      // Execute eb command
+      console.log(`\n----- Deploying ${application} ${appConfig} configuration into ${environment} environment -----\n`)
+      exitCode = await deploy(kwArgs, appConfiguration)
+      console.log(`\n----- End of deployment ${application} ${appConfig} into ${environment} environment -----\n`)
   }
 
   // Write to last run file if process is succesfull
@@ -165,7 +316,7 @@ async function deploy(kwArgs, appConfiguration) {
   
   let exitCode;
   
-  let {cloudProvider, cloudService, cloudTool, application, environment, appConfig} = kwArgs;
+  let {cloudProvider, cloudService, commandLineTool, application, environment, appConfig} = kwArgs;
 
   //Read last run config
   let lastRunFileContents = parseYmlFile(kwArgs.lastRunFile) || {};
@@ -181,8 +332,8 @@ async function deploy(kwArgs, appConfiguration) {
     application = ebConfigContents.global.application_name}
 
   //Call platform specific deploy function
-  switch (`${cloudProvider},${cloudService},${cloudTool}`){
-    case 'aws,ebt,eb':
+  switch (`${cloudProvider},${cloudService},${commandLineTool}`){
+    case 'aws,elasticbeanstalk,eb':
       await deployAwsElasticBeansTalk(kwArgs, appConfiguration)
       .then(code => {exitCode = code})
       .catch(err => {
@@ -259,7 +410,21 @@ async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
     let result, exitCode, ebArgs;
 
     // Copy env file
-    copyFile(environmentFile, '.env');
+    copyFile(environmentFile, kwArgs.envFile);
+
+    // Copy secrets
+    if (kwArgs.copySecrets){
+      const tokenFiles = kwArgs.tokenFiles;
+      const environmentTokenFile = tokenFiles && tokenFiles[environment]
+      const tokenContent = parseYmlFile(environmentTokenFile)
+      const tokenFileContent = evaluateYaml(tokenContent)
+      const tokens = tokenFileContent[environment][application]
+      let envFileContent = fs.readFileSync(environmentFile,{encoding:'utf8'}) + '\n'
+      for (let [key, value] of Object.entries(tokens)){
+        envFileContent += key + '=' + value + '\n'
+      }
+      fs.writeFileSync(kwArgs.envFile, envFileContent)
+    }
 
     // init eb 
     let ebCmd = `init ${application} --region ${region} --platform Node.js --keyname aws`

@@ -4,7 +4,6 @@ config:
   readYaml|: ${configPath}/.cipaths.yaml,config,{configPath:\ ${configPath}}
 
 defaults:
-  cloudProvider: aws
-  region: eu-central-1
-  environment: staging
+  debug: true
+  simulate: true
 

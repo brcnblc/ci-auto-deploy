@@ -90,9 +90,30 @@ function sleep(ms){
   })
 }
 
+// Starting Prompt
+async function startingPrompt (mustInput= 'y', maxTry = 3) {
+  let response, cnt = 0;
+  while (cnt < maxTry) {
+    cnt++;
+    response = await prompts({
+      type: 'text',
+      name: 'continue',
+      message: 'Please enter (y) to continue (q) to quit :'
+    })
+    if (response.continue == 'q'){break}
+    if (response.continue == mustInput){
+      return true 
+    } else {
+      console.error(`Wrong Entry. Please Try again.`)
+    }
+  }
+  
+  return false
+} 
+
 // Password Prompt
-async function passwordPrompt () {
-  let response, cnt = 0, maxTry = 3, secret = '159e92f9f48459188b25795bcf3de61f';
+async function passwordPrompt (secret, maxTry = 3) {
+  let response, cnt = 0;
   while (cnt < maxTry) {
     cnt++;
     response = await prompts({
@@ -287,5 +308,5 @@ function dateSuffix(sep = '_'){
  
  }
 
-module.exports = {copyFile, disableLine, listFiles, parseJsonFile, parseYmlFile, 
+module.exports = {copyFile, disableLine, listFiles, parseJsonFile, parseYmlFile, startingPrompt,
   sleep, passwordPrompt, capitalize, camelCase, evaluateYaml, dumpYmlFile, dateSuffix}
