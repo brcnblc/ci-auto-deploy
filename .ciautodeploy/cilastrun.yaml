@@ -2,7 +2,7 @@ kwArgs:
   cloudProvider: aws
   cloudService: ebt
   cloudTool: eb
-  application: myApi1
+  application: all
   environment: staging
   configFile: .cideploy.yaml
   configPath: .ciautodeploy
