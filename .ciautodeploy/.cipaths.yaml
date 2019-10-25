@@ -10,11 +10,10 @@ config:
       defaultsFile : ${path}/aws_defaults.yaml
       readYaml|: ${defaultsFile},defaults,{path:\ ${path}}
    
-  
   lastRunFile: ${args.lastRunFile}
   secretsPath: ${args.secretsPath}
   passwordFile: ${secretsPath}/${args.passwordFile}
   tokenFiles: 
-    dev: ${args.secretsPath}/${args.tokenFiles.dev}
+    testing: ${args.secretsPath}/${args.tokenFiles.testing}
     staging: ${args.secretsPath}/${args.tokenFiles.staging}
     production: ${args.secretsPath}/${args.tokenFiles.production}

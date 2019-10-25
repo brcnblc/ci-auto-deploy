@@ -1,4 +1,5 @@
 node_modules
+test_folder
 *.lock
 
 # Elastic Beanstalk Files

@@ -47,7 +47,7 @@
     },
     "config-file" : {
       "variableName" : "configFile",
-      "defaultValue" : ".cideploy.yaml",
+      "defaultValue" : ".ciautodeploy.yaml",
       "type" : "parameter",
       "longCommand" : "config-file",
       "shortCommand" : "conf",

@@ -63,7 +63,7 @@ async function runSpawn(command, args, simulate) {
 function writeLastRun(kwArgs){
 
   let lastRunFile;
-  const exceptionList = ['cloud']
+  const exceptionList = ['cloud','path']
   
   if (kwArgs && kwArgs.lastRunFile && kwArgs.deployPath ){
     lastRunFile = kwArgs.deployPath + '/' + kwArgs.lastRunFile
