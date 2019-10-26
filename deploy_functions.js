@@ -154,8 +154,50 @@ Cloud Provider: ${kwArgs.cloudProvider}
 Cloud Service: ${kwArgs.cloudService}
 Command Line Tool: ${kwArgs.commandLineTool} 
 Application: ${kwArgs.application}
-environment: ${kwArgs.environment}
+Environment: ${kwArgs.environment}
         `)
+}
+
+async function askPassword(kwArgs, appConfiguration, environment){
+  const passwordFileContent = parseYmlFile(kwArgs.passwordFile)
+
+  if ((appConfiguration.prompt == 'password' || environment == 'production')){
+    if (passwordFileContent.errno == -2){throw(`Error: Password file ${kwArgs.passwordFile} not found`)}
+    const passwords = passwordFileContent.passwords
+    const environmentPassword = passwords && passwords[environment]
+    
+    if (!environmentPassword) {throw(`Password definition for ${environment} environment not found in ${kwArgs.passwordFile}`)}
+    
+    let passOk = false;
+    
+    if ((!kwArgs.passwords || kwArgs.passwords == null) && (!kwArgs.passwordHashs || kwArgs.passwordHashs == null)){
+      passOk = await passwordPrompt(environment, environmentPassword, 3);
+      if (!passOk){throw('Wrong Password in user entry.')}
+    } else if (kwArgs.passwords != null){
+      if (!kwArgs.passwords[environment]){throw(`--passwords argument does not contain definition for ${environment} environment.`)}
+      passOk = (md5(kwArgs.passwords[environment]) == environmentPassword)
+      if (!passOk){throw(`Wrong Password in --passwords argument.`)}
+
+    } else if (kwArgs.passwordHashs != null){
+      if (!kwArgs.passwordHashs[environment]){throw(`--passwordHashs argument does not contain definition for ${environment} environment.`)}
+      passOk = (kwArgs.passwordHashs[environment] == environmentPassword);
+      if (!passOk){throw(`Wrong Password in --password-hashs argument.`)}
+    }
+    
+  } else if (appConfiguration.prompt == 'prompt'){
+    const userInput = await startingPrompt('y')
+    if (!userInput){throw ('Process aborted on user input.')}
+    
+  }
+}
+
+function checkTokenFile(kwArgs, appConfiguration, environment){
+  if (kwArgs.copySecrets){
+    const tokenFile = appConfiguration.tokenFile
+    if (!tokenFile){throw(`Token file definition for ${environment} could not be found.`)}
+    const tokenFileContent = parseYmlFile(tokenFile)
+    if (tokenFileContent.errno == -2){throw(`Token file ${tokenFile} does not exist.`)}
+  }
 }
 
 // ----  INIT DEPLOY ------
@@ -196,6 +238,15 @@ async function initDeploy(kwArgs){
   
   // Batch Processiong
   if (kwArgs.application in envGroups){
+    
+    // Print starting args
+    printStartingParameters(kwArgs)
+
+    // ask password
+    await askPassword(kwArgs, environmentConfig.defaults, environment)
+    
+    // Check if token file exists if copy-secrets is true
+    checkTokenFile(kwArgs, environmentConfig.defaults, environment)
     
     const items = envGroups[kwArgs.application]
     
@@ -256,45 +307,10 @@ async function initDeploy(kwArgs){
       printStartingParameters(kwArgs)
 
       // ask password
-      const passwordFileContent = parseYmlFile(kwArgs.passwordFile)
-
-      if ((appConfiguration.prompt == 'password' || environment == 'production')){
-        if (passwordFileContent.errno == -2){throw(`Error: Password file ${kwArgs.passwordFile} not found`)}
-        const passwords = passwordFileContent.passwords
-        const environmentPassword = passwords && passwords[environment]
-        
-        if (!environmentPassword) {throw(`Password definition for ${environment} environment not found in ${kwArgs.passwordFile}`)}
-        
-        let passOk = false;
-        
-        if ((!kwArgs.passwords || kwArgs.passwords == null) && (!kwArgs.passwordHashs || kwArgs.passwordHashs == null)){
-          passOk = await passwordPrompt(environmentPassword, 3);
-          if (!passOk){throw('Wrong Password in user entry.')}
-        } else if (kwArgs.passwords != null){
-          if (!kwArgs.passwords[environment]){throw(`--passwords argument does not contain definition for ${environment} environment.`)}
-          passOk = (md5(kwArgs.passwords[environment]) == environmentPassword)
-          if (!passOk){throw(`Wrong Password in --passwords argument.`)}
-
-        } else if (kwArgs.passwordHashs != null){
-          if (!kwArgs.passwordHashs[environment]){throw(`--passwordHashs argument does not contain definition for ${environment} environment.`)}
-          passOk = (kwArgs.passwordHashs[environment] == environmentPassword);
-          if (!passOk){throw(`Wrong Password in --password-hashs argument.`)}
-        }
-        
-      } else if (appConfiguration.prompt == 'prompt'){
-        const userInput = await startingPrompt('y')
-        if (!userInput){throw ('Process aborted on user input.')}
-        
-      }
+      await askPassword(kwArgs, appConfiguration, environment)
       
       // Check if token file exists if copy-secrets is true
-      if (kwArgs.copySecrets){
-        const tokenFiles = kwArgs.tokenFiles;
-        const environmentTokenFile = tokenFiles && tokenFiles[environment]
-        if (!environmentTokenFile){throw(`Token file definition for ${environment} could not be found in --token-files argument`)}
-        const tokenFileContent = parseYmlFile(environmentTokenFile)
-        if (tokenFileContent.errno == -2){throw(`Token file ${environmentTokenFile} does not exist.`)}
-      }
+      checkTokenFile(kwArgs, appConfiguration, environment)
 
       
       // Execute eb command
@@ -414,15 +430,22 @@ async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
 
     // Copy secrets
     if (kwArgs.copySecrets){
-      const tokenFiles = kwArgs.tokenFiles;
-      const environmentTokenFile = tokenFiles && tokenFiles[environment]
-      const tokenContent = parseYmlFile(environmentTokenFile)
-      const tokenFileContent = evaluateYaml(tokenContent)
-      const tokens = tokenFileContent[environment][application]
-      let envFileContent = fs.readFileSync(environmentFile,{encoding:'utf8'}) + '\n'
-      for (let [key, value] of Object.entries(tokens)){
-        envFileContent += key + '=' + value + '\n'
+      const tokenFile = appConfiguration.tokenFile
+      if (!tokenFile){throw(`Token file definition for ${environment} could not be found.`)}
+      const tokenFileContent = parseYmlFile(tokenFile)
+      if (tokenFileContent.errno == -2){throw(`Token file ${tokenFile} does not exist.`)}
+      const tokenContent = evaluateYaml(tokenFileContent)
+      const tokens = tokenContent[environment][application]
+      let envFileContent = fs.readFileSync(environmentFile,{encoding:'utf8'}) 
+      if (tokens){
+        envFileContent += '\n\n# Auto inserted by ci-auto-deploy\n'
+        for (let [key, value] of Object.entries(tokens)){
+          envFileContent += key + '=' + value + '\n'
+        }
+      } else {
+        console.log(`\nNo secret definition exists for ${application} in ${tokenFile}`)
       }
+      
       fs.writeFileSync(kwArgs.envFile, envFileContent)
     }
 

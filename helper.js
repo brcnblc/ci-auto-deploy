@@ -112,14 +112,14 @@ async function startingPrompt (mustInput= 'y', maxTry = 3) {
 } 
 
 // Password Prompt
-async function passwordPrompt (secret, maxTry = 3) {
+async function passwordPrompt (environment, secret, maxTry = 3) {
   let response, cnt = 0;
   while (cnt < maxTry) {
     cnt++;
     response = await prompts({
       type: 'text',
       name: 'password',
-      message: 'Please enter password: (q) to quit'
+      message: `Please enter password for '${environment}' environment : (q) to quit`
     })
     if (response.password == 'q'){throw ('Process aborted on user input.')}
     if (md5(response.password) == secret){

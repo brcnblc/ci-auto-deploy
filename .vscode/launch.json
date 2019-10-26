@@ -4,6 +4,7 @@
   // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
   "version": "0.2.0",
   "configurations": [
+
     {
       "type": "node",
       "request": "launch",
@@ -16,7 +17,7 @@
     {
       "type": "node",
       "request": "launch",
-      "name": "Deploy All",
+      "name": "Deploy All with args",
       "program": "${workspaceFolder}/deploy.js",
       "cwd": "${workspaceFolder}",
       "args": ["aws", "all", "staging", "--debug", "--simulate", "--passwords", "\"{staging: staging}\""],
@@ -29,6 +30,15 @@
       "program": "${workspaceFolder}/deploy.js",
       "cwd": "${workspaceFolder}",
       "args": ["--debug","--simulate", "--passwords", "\"{staging: staging}\""],
+      "env": {"CI_AUTO_DEPLOY": ""}
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Deploy all no args",
+      "program": "${workspaceFolder}/deploy.js",
+      "cwd": "${workspaceFolder}",
+      "args": ["all", "--debug","--simulate", "--simulate", "--passwords", "\"{staging: staging}\""],
       "env": {"CI_AUTO_DEPLOY": ""}
     }
   ]

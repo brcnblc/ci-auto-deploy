@@ -14,3 +14,9 @@ staging:
     
     API1_KEY: 0e31dc63462d5c55a09cb7bd8dc3526f
     API1_SECRET_KEY: 0e7a4357f9f5271ad2e8615a3dfc682f
+
+  myApi2:
+    inherit|: ${staging.defaults}
+    
+    API2_KEY: 462d5c55a09cb7b0e31dc63d8dc3526f
+    API2_SECRET_KEY: 271ad2e8610e7a4357f9f55a3dfc682f

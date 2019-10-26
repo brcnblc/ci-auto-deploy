@@ -13,7 +13,4 @@ config:
   lastRunFile: ${args.lastRunFile}
   secretsPath: ${args.secretsPath}
   passwordFile: ${secretsPath}/${args.passwordFile}
-  tokenFiles: 
-    testing: ${args.secretsPath}/${args.tokenFiles.testing}
-    staging: ${args.secretsPath}/${args.tokenFiles.staging}
-    production: ${args.secretsPath}/${args.tokenFiles.production}
+  

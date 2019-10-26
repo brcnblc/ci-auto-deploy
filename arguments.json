@@ -279,15 +279,6 @@
       "definition" : "Defines the file name where ci-auto-deploy passwords are stored.",
       "usage" : "<PasswordFileName.yaml>"
     },
-    "token-files" : {
-      "variableName" : "tokenFiles",
-      "defaultValue" : "{testing: .testing_tokens.yaml, staging: .staging_tokens.yaml, production: .production_tokens.yaml}",
-      "type" : "parameter",
-      "longCommand" : "token-files",
-      "shortCommand" : "tf",
-      "definition" : "Defines the token file names with respect to environment.",
-      "usage" : "<\"{env1: tokens1.yaml, env2: tokens2.yaml , ...}\">"
-    },
     "env-path" : {
       "variableName" : "envPath",
       "defaultValue" : ".cienvs",
