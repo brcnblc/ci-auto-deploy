@@ -3,3 +3,9 @@ test_folder
 
 # ci-auto-deploy
 .cilastrun.yaml
+
+# Elastic Beanstalk Files
+.elasticbeanstalk/*
+!.elasticbeanstalk/*.cfg.yml
+!.elasticbeanstalk/*.global.yml
+.ebignore
