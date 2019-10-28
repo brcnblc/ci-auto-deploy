@@ -29,7 +29,7 @@
       "name": "Deploy no Args",
       "program": "${workspaceFolder}/deploy.js",
       "cwd": "${workspaceFolder}",
-      "args": ["--debug","--simulate", "--passwords", "\"{staging: staging}\""],
+      "args": ["--debug","--simulate", "--passwords", "\"{staging: staging, production: production}\""],
       "env": {"CI_AUTO_DEPLOY": ""}
     },
     {
@@ -38,7 +38,25 @@
       "name": "Deploy all no args",
       "program": "${workspaceFolder}/deploy.js",
       "cwd": "${workspaceFolder}",
-      "args": ["all", "--debug","--simulate", "--simulate", "--passwords", "\"{staging: staging}\""],
+      "args": ["all", "--debug","--simulate", "--simulate", "--passwords", "\"{staging: staging, production: production}\""],
+      "env": {"CI_AUTO_DEPLOY": ""}
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Deploy build",
+      "program": "${workspaceFolder}/deploy.js",
+      "cwd": "${workspaceFolder}",
+      "args": ["aws myApi1 staging", "--build-deploy", "--build-run" ,"--debug", "--passwords", "\"{staging: staging}\""],
+      "env": {"CI_AUTO_DEPLOY": ""}
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Deploy production",
+      "program": "${workspaceFolder}/deploy.js",
+      "cwd": "${workspaceFolder}",
+      "args": ["aws myApi1 production" , "--debug", "--passwords", "\"{production: production}\""],
       "env": {"CI_AUTO_DEPLOY": ""}
     }
   ]

@@ -6,6 +6,7 @@
   "scripts": {
     "start": "echo \"Started Successfully\" && exit 0",
     "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "sh build_test.sh",
     "deploy": "node deploy.js"
   },
   "repository": {

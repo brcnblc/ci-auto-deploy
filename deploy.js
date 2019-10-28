@@ -44,6 +44,7 @@ function evaluateVariables(argString){
     for ([key,value] of Object.entries(ci)){
       _.merge(kwArgs, value)
     }
+    _.merge(kwArgs, {input: {globalConfig: ci}})
   }
   
   //Merge Environment Variables
@@ -51,6 +52,7 @@ function evaluateVariables(argString){
     const env = process.env[kwArgs.environmentVariable]
     if (env && env != ''){
       _.merge(kwArgs, parseArgs(env, argDefinitions, mode = 'argsonly'))
+      _.merge(kwArgs, {input: {envvar: env}})
     }
   }
 
@@ -58,6 +60,7 @@ function evaluateVariables(argString){
   {
     if (argString && argString != ''){
       _.merge(kwArgs, parseArgs(argString, argDefinitions, mode = 'argsonly'))
+      _.merge(kwArgs, {input: {cliargs: argString}})
     }
   }
   

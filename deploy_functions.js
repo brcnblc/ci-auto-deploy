@@ -219,7 +219,7 @@ async function initDeploy(kwArgs){
   let {cloudProvider, cloudService, commandLineTool, application, environment, appConfig} = kwArgs;
   
   const mainConfigName = camelCase(`${cloudProvider}_${cloudService}_${commandLineTool}`,'_');
-  const mainConfig = configuration.cloudProvider.aws.platform[mainConfigName]
+  const mainConfig = configuration.cloudProvider[cloudProvider].platform[mainConfigName]
   if (!mainConfig){
     throw (`Configuration for ${mainConfigName} not found in ${kwArgs.deployConfigFile}`)
   }
@@ -235,10 +235,11 @@ async function initDeploy(kwArgs){
 
   const envGroups = environmentConfig.group
   
+  _.merge(kwArgs, {input: {cloudConfig: configuration}})
   
   // Batch Processiong
   if (kwArgs.application in envGroups){
-    
+    const mainApplicationName = kwArgs.application
     // Print starting args
     printStartingParameters(kwArgs)
 
@@ -259,19 +260,25 @@ async function initDeploy(kwArgs){
     for (let appName of items){
       cnt++;
 
-      const _kwArgs = deepCopyPro(kwArgs)
       
-      _kwArgs.application = appName;
+      
+      kwArgs.application = appName;
       console.log(`\nStep ${cnt} of ${items.length}`)
       console.log(`----- Deploying "${appName}" into "${environment}" environment -----\n`)
       
       try { 
         const appConfigPath = ['application', appName, 'configuration', appConfig]
         const appConfiguration = _.get(environmentConfig, appConfigPath);
+        
         if (!appConfiguration){
-          throw (`${application} ${appConfig} configuration for ${environment} environment not found !`);}
-        exitCode = await deploy(_kwArgs, appConfiguration);
-        scnt++;
+          throw (`${application} ${appConfig} configuration for ${environment} environment not found !`);
+        }
+          // Deploy
+          _.merge(kwArgs, appConfiguration)
+          _.merge(kwArgs, {input: {appConfig: appConfiguration}})
+          exitCode = await deploy(kwArgs, appConfiguration);
+        
+          scnt++;
       } catch (err) {
         error = true;
         if (kwArgs.debug && err.stack){
@@ -292,6 +299,12 @@ async function initDeploy(kwArgs){
       console.error(`\n${cnt - scnt} items could not be deployed.\n`);
       throw -1
     }
+
+     // Write to last run file if process is succesfull
+     if (exitCode == 0){
+       kwArgs.application = mainApplicationName
+      writeLastRun(kwArgs)
+      }
     
   } else {
       // Extract configuration
@@ -312,17 +325,22 @@ async function initDeploy(kwArgs){
       // Check if token file exists if copy-secrets is true
       checkTokenFile(kwArgs, appConfiguration, environment)
 
-      
+      // Merge appConfiguration into kwArgs
+      _.merge(kwArgs, appConfiguration)
+      _.merge(kwArgs, {input: {appConfig: appConfiguration}})
+
       // Execute eb command
       console.log(`\n----- Deploying ${application} ${appConfig} configuration into ${environment} environment -----\n`)
       exitCode = await deploy(kwArgs, appConfiguration)
       console.log(`\n----- End of deployment ${application} ${appConfig} into ${environment} environment -----\n`)
+
+      // Write to last run file if process is succesfull
+      if (exitCode == 0){
+        writeLastRun(kwArgs)
+      }
   }
 
-  // Write to last run file if process is succesfull
-  if (exitCode == 0){
-    writeLastRun(kwArgs)
-  }
+  
 
   return exitCode;
 }
@@ -407,7 +425,7 @@ function evalLaunch(kwArgs, createParameters, launch){
 
 // AWS Elastic Beans Talk Deployement by eb client tool
 async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
-  
+  //_.merge(kwArgs, appConfiguration)
   const {environmentFile, disableLines} = appConfiguration;
   const {application, environment, region, launch} = kwArgs;
   let createParameters = appConfiguration.create
@@ -458,13 +476,24 @@ async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
     // Copy elastic beans talk config file
     //copyFile(configFile, '.elasticbeanstalk/config.yml');
 
-    // Copy .gitignore file onto .ebignore file
-    copyFile('.gitignore', '.ebignore');
+    if (!kwArgs.buildDeploy){
+      // Copy .gitignore file onto .ebignore file
+      copyFile('.gitignore', '.ebignore');
 
-    // comment lines in ignore file
-    disableLines.forEach(element => {
-      disableLine(element, '.ebignore', '#')
-    });
+      // comment lines in ignore file
+      disableLines.forEach(element => {
+        disableLine(element, '.ebignore', '#')
+      });
+    } else {
+      if (kwArgs.buildRun){
+        result = spawnSync(`npm run ${kwArgs.buildScript}`, {encoding:'ascii', shell:true})
+        if (result.stdout){console.log(result.stdout)}
+        if (result.stderr){console.log(result.stderr)}
+      }
+      const ebignoreContent = `*\n!${kwArgs.buildPath}/**\n!/${kwArgs.packageFile}\n`
+      fs.writeFileSync('.ebignore', ebignoreContent)
+    }
+   
 
     // Check Status of environment
     const status = {}

@@ -323,6 +323,42 @@
       "shortCommand" : "enf",
       "definition" : "Target environment file name.Always '.env' for nodejs environment.",
       "usage" : "<EnvFileName>"
+    },
+    "build-deploy" : {
+      "variableName" : "buildDeploy",
+      "defaultValue" : false,
+      "type" : "boolean",
+      "longCommand" : "build-deploy",
+      "shortCommand" : "bld",
+      "definition" : "If specified, deploys only build directory.",
+      "usage" : null
+    },
+    "build-path" : {
+      "variableName" : "buildPath",
+      "defaultValue" : "build",
+      "type" : "parameter",
+      "longCommand" : "build-path",
+      "shortCommand" : "bpt",
+      "definition" : "Defines build path name to be deployed.",
+      "usage" : "<BuildPath>"
+    },
+    "build-script" : {
+      "variableName" : "buildScript",
+      "defaultValue" : "build",
+      "type" : "parameter",
+      "longCommand" : "build-script",
+      "shortCommand" : "bsc",
+      "definition" : "Defines npm build script name in package file.",
+      "usage" : "<BuildScriptName>"
+    },
+    "build-run" : {
+      "variableName" : "buildRun",
+      "defaultValue" : false,
+      "type" : "boolean",
+      "longCommand" : "build-run",
+      "shortCommand" : "brn",
+      "definition" : "If specified, runs build script before deployment.",
+      "usage" : null
     }
   },
   "positionals" : ["cloud-provider", "application", "environment", "env-suffix", "app-config"],
