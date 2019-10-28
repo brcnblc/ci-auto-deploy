@@ -361,7 +361,7 @@
       "usage" : null
     }
   },
-  "positionals" : ["cloud-provider", "application", "environment", "env-suffix", "app-config"],
+  "positionals" : ["application", "environment", "env-suffix", "app-config", "cloud-provider"],
   "examples" : {
     "1" : {
       "title" : "FIRST, ADD FOLLOWING LINE to your scripts in package.json.",

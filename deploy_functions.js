@@ -18,11 +18,13 @@ function writeLastDeployedFile(file, field, value){
 
 // eb Sync command
 function eb(args, returnError = false, stdin = null, simulate) {
-  let result;
+  let result={};
+  console.log (`eb ${args}`)
   if (!simulate){
     result = spawnSync(`eb ${args}`, {encoding:'utf8', shell:true, input:stdin});
   } else {
-    result = spawnSync(`eb ${args} --help`, {encoding:'utf8', shell:true, input:stdin});
+    result = spawnSync(`echo simulate eb`, {encoding:'utf8', shell:true, input:stdin});
+    
   }
   
   if (result.status !=0 &! returnError){
@@ -33,21 +35,32 @@ function eb(args, returnError = false, stdin = null, simulate) {
 }
 
 // eb Async command
-async function runSpawn(command, args, simulate) {
+async function runSpawn(command, args, simulate, raiseOnError=true) {
   return new Promise(async function (resolve, reject)  {
     let subProcess, processRunning, exitCode, dots='Wait.';
-    
+    console.log (command, args.join(' '))
     if (!simulate) {
       subProcess = spawn(command, args, {shell:true});
     } else {
-      subProcess = spawn(command, ['--help'], {shell:true});
+      subProcess = spawn('echo', [command, 'simulated'], {shell:true});
     }
     
     subProcess.on('data', data => console.log(`${data.toString()}`));
+    
     processRunning = true;
+    
     subProcess.stdout.on('data', data => console.log(`${data.toString()}`));
-    subProcess.stderr.on('data', data => {reject(data.toString())});
+   
+    subProcess.stderr.on('data', data => {
+      if (raiseOnError){
+        reject(data.toString())
+      } else {
+        console.log(`${data.toString()}`)
+      }
+    });
+
     subProcess.on('close', code => {processRunning = false; exitCode = code})
+    
     while (processRunning){
       dots += '.';
       await sleep(1000)
@@ -426,7 +439,7 @@ function evalLaunch(kwArgs, createParameters, launch){
 // AWS Elastic Beans Talk Deployement by eb client tool
 async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
   //_.merge(kwArgs, appConfiguration)
-  const {environmentFile, disableLines} = appConfiguration;
+  const {environmentFile, disableLines, ebignoreContent} = appConfiguration;
   const {application, environment, region, launch} = kwArgs;
   let createParameters = appConfiguration.create
   const environmentName = `${application}-${environment}` + (kwArgs.envSuffix ? `-${kwArgs.envSuffix}` : '')
@@ -460,10 +473,10 @@ async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
         for (let [key, value] of Object.entries(tokens)){
           envFileContent += key + '=' + value + '\n'
         }
+        console.log(`Tokens inserted into ${environmentFile} from ${tokenFile} for ${application} `)
       } else {
         console.log(`\nNo secret definition exists for ${application} in ${tokenFile}`)
       }
-      
       fs.writeFileSync(kwArgs.envFile, envFileContent)
     }
 
@@ -476,6 +489,12 @@ async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
     // Copy elastic beans talk config file
     //copyFile(configFile, '.elasticbeanstalk/config.yml');
 
+    if (kwArgs.buildRun){
+      console.log(`Building application.`)
+      exitCode = await runSpawn('npm', ['run', kwArgs.buildScript], false)
+      if (exitCode != 0){throw(exitCode)}
+    }
+
     if (!kwArgs.buildDeploy){
       // Copy .gitignore file onto .ebignore file
       copyFile('.gitignore', '.ebignore');
@@ -485,13 +504,7 @@ async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
         disableLine(element, '.ebignore', '#')
       });
     } else {
-      if (kwArgs.buildRun){
-        result = spawnSync(`npm run ${kwArgs.buildScript}`, {encoding:'ascii', shell:true})
-        if (result.stdout){console.log(result.stdout)}
-        if (result.stderr){console.log(result.stderr)}
-      }
-      const ebignoreContent = `*\n!${kwArgs.buildPath}/**\n!/${kwArgs.packageFile}\n`
-      fs.writeFileSync('.ebignore', ebignoreContent)
+      fs.writeFileSync('.ebignore', ebignoreContent.join('\n'))
     }
    
 
@@ -554,14 +567,14 @@ async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
     // Create environment if it does not exist and force-create argument is passed
     if (result.search('ERROR: NotFoundError') > -1){
       if (kwArgs.forceCreate){
-        console.log(`\nEnvironment ${environmentName} not found. Creating ${environmentName} environment. This will take a few minutes.`)
+        console.log(`\nEnvironment ${environmentName} not found. Creating ${environmentName} environment. This will take a few minutes.\n`)
         if (!createParameters.cname) {createParameters['cname'] = cname};
         let createArgs = ['create', environmentName, "--nohang"];
         for (let [key, value] of Object.entries(createParameters).sort()) {
           createArgs.push(`--${key}`);
           if (typeof value != 'boolean') {createArgs.push(`"${value}"`)};
         }
-        console.log ('\neb', createArgs.join(' '),'\n')
+        
         exitCode = await runSpawn('eb', createArgs, kwArgs.simulate)
         if (exitCode != 0){ throw ('Error occurred while creating environment.')}
       } else {
@@ -577,7 +590,7 @@ async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
     }
 
     // Deploy
-    console.log('Deployment started. ')
+    console.log('Deploying Application. \n')
     ebArgs = ['deploy', environmentName];
 
     if (!existingVersion) {
@@ -606,7 +619,6 @@ async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
     }
 
     // Run command
-    console.log('eb',ebArgs.join(' '))
     ebArgs.push('-p')
     ebArgs.push('--nohang')
     exitCode = await runSpawn('eb', ebArgs, kwArgs.simulate)

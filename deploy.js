@@ -64,11 +64,7 @@ function evaluateVariables(argString){
     }
   }
   
-  // Handle all as first argument
-  if (kwArgs.cloudProvider == 'all'){
-    kwArgs.cloudProvider = "last || aws"
-    kwArgs.application = 'all'
-  }
+  
 
   return kwArgs
 }
