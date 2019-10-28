@@ -1,6 +1,6 @@
 {
   "name": "ci-auto-deploy",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Automatic Deployment for Continuous Delivery Pipelines",
   "main": "index.js",
   "scripts": {
