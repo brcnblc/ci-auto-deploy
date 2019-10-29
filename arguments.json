@@ -369,15 +369,15 @@
     },
     "2" : {
       "title" : "Deploy myApi1 to staging environment at AWS Elastic Beans Talk",
-      "example" : "deploy aws myApi1 staging"
+      "example" : "deploy myApi1 staging"
     },
     "3" : {
       "title" : "Deploy all applications to staging environment. Note that all is a group definition in config file.",
-      "example" : "deploy aws all staging"
+      "example" : "deploy all staging"
     },
     "4" : {
       "title" : "Positional arguments: [cloud-provider] [application] [environment] [env-suffix] [app-config]",
-      "example" : "deploy aws myApi2 staging active highSecurity"
+      "example" : "deploy myApi2 staging active highSecurity"
     }
   }
 
