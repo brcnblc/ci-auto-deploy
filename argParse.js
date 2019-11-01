@@ -1,6 +1,6 @@
 const yaml = require('js-yaml');
 
-function parse (argStr, argDefs, mode='all') {
+function parse (args, argDefs, mode='all') {
   if (!(['all', 'defaults', 'argsonly'].includes(mode))){
     throw (`Error: Unknown parse mode '${mode}' in parse function arguments.`)}
   // mode: all, defaults, argsonly
@@ -22,7 +22,7 @@ function parse (argStr, argDefs, mode='all') {
   }
 
   const { positionals } = argDefs
-  let args = evalStrings(argStr || '')
+  //let args = evalStrings(argStr || '')
 
   //Help
   if (args.includes('--help') || args.includes('-h')){
@@ -30,7 +30,7 @@ function parse (argStr, argDefs, mode='all') {
     process.exit(0);
   }
 
-  if (!argStr || argStr == ''){return kwargs}
+  if (!args || args.length == 0){return kwargs}
 
   if (!argDefs) {throw('No Argument Definition provided.')}
 
@@ -103,7 +103,8 @@ function parse (argStr, argDefs, mode='all') {
 
   //Throw error on wrong argument
   if (cnt != args.length){
-    throw ('Could not handle All Arguments.')
+    throw (`Could not handle All Arguments. \n ${args}`)
+
   }
 
   return kwargs;

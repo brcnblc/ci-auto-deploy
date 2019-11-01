@@ -37,7 +37,7 @@ function eb(args, returnError = false, stdin = null, simulate) {
 // eb Async command
 async function runSpawn(command, args, simulate, raiseOnError=true) {
   return new Promise(async function (resolve, reject)  {
-    let subProcess, processRunning, exitCode, dots='Wait.';
+    let subProcess, processRunning, exitCode;
     console.log (command, args.join(' '))
     if (!simulate) {
       subProcess = spawn(command, args, {shell:true});
@@ -62,9 +62,8 @@ async function runSpawn(command, args, simulate, raiseOnError=true) {
     subProcess.on('close', code => {processRunning = false; exitCode = code})
     
     while (processRunning){
-      dots += '.';
       await sleep(1000)
-      //process.stdout.write(`\r\n${dots}`)
+      process.stdout.write('.')
     }
 
     resolve(exitCode)
@@ -228,7 +227,7 @@ async function initDeploy(kwArgs){
   checkFiles(kwArgs, true)
 
   const deployConfig = parseYmlFile(kwArgs.deployConfigFile)
-  const configuration = evaluateYaml (deployConfig, {args:kwArgs})
+  const configuration = evaluateYaml (deployConfig, {args:kwArgs}, kwArgs.deployConfigFile)
   let {cloudProvider, cloudService, commandLineTool, application, environment, appConfig} = kwArgs;
   
   const mainConfigName = camelCase(`${cloudProvider}_${cloudService}_${commandLineTool}`,'_');
@@ -422,7 +421,7 @@ function evaluateCname(kwArgs, appConfiguration, environmentName){
 // Evaluate and override launch configuration
 function evalLaunch(kwArgs, createParameters, launch){
   if (launch){
-    let dict = evaluateYaml(parseYmlFile(kwArgs.launchFile));
+    let dict = evaluateYaml(parseYmlFile(kwArgs.launchFile), null, kwArgs.launchFile);
     const launchKeys = [];
     nested(dict, (cb) => {
       if (cb.level == 1 && launchKeys.indexOf(cb.item) == -1){launchKeys.push(cb.item)}
@@ -465,7 +464,7 @@ async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
       if (!tokenFile){throw(`Token file definition for ${environment} could not be found.`)}
       const tokenFileContent = parseYmlFile(tokenFile)
       if (tokenFileContent.errno == -2){throw(`Token file ${tokenFile} does not exist.`)}
-      const tokenContent = evaluateYaml(tokenFileContent)
+      const tokenContent = evaluateYaml(tokenFileContent, null, tokenFile)
       const tokens = tokenContent[environment][application]
       let envFileContent = fs.readFileSync(environmentFile,{encoding:'utf8'}) 
       if (tokens){

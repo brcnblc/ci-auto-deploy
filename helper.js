@@ -5,6 +5,7 @@ const prompts = require ('prompts');
 const md5 = require('blueimp-md5');
 const _ = require('lodash');
 const fs = require("fs");
+const dotenv = require("dotenv")
 
 // Copies source file on to target and replaces the target content.
 function copyFile(source, target) {
@@ -90,6 +91,13 @@ function sleep(ms){
   })
 }
 
+function readFile(path){
+  try {
+    return fs.readFileSync(path, {encoding:'utf8'})
+  } catch (err) {
+    return err
+  }
+}
 // Starting Prompt
 async function startingPrompt (mustInput= 'y', maxTry = 3) {
   let response, cnt = 0;
@@ -139,9 +147,9 @@ const capitalize = s => s.charAt(0).toUpperCase() + s.slice(1)
 const camelCase = (v,s) => v.split(s).slice(1).reduce((p,c) => p + capitalize(c), v.split(s)[0])
 
 // Pass Content after parsing yaml file with parseYmlFile('fileName.yaml') function
-function evaluateYaml(content, variables) { 
+function evaluateYaml(content, variables, yamlFileName) { 
   let context = {};
-  
+  const contextObjects = ['current','args']
   //dictMerge(context, kwArgs)
   _.merge(context, variables)
   _.merge(context, content)
@@ -175,6 +183,7 @@ function evaluateYaml(content, variables) {
     const pattern = new RegExp(/\$\{([^\{\}]+)\}/g); // match ${variableName}
     let match = pattern.exec(value), modifiedValue = value
     if (match){
+
       const matchedVariableArray = []
       while (match != null){
         
@@ -183,36 +192,53 @@ function evaluateYaml(content, variables) {
         matchedVariableArray.push(matchedVariable)
         
         let evalValue;
-
+       
         let matchedVarPath = matchedVariable.split('.');
+        const isContextObject = contextObjects.includes(matchedVarPath[0])
         
-        // Search current.* item in context
+        // First Search full path in context
         evalValue = nestedGetPathList(context, matchedVarPath)
         
-        // Search in current node
-        if (!evalValue){
+        // Then Search nodes back to root
+        if (!evalValue  &! isContextObject){
+          if (parentItem == 'envvars'){
+            let a=1
+          }
           matchedVarPath = clearSlash(parentList.slice(0))
-          matchedVarPath.push(match[1] )
-          evalValue = nestedGetPathList(target, matchedVarPath)
+          const matchValuePath = match[1].split('.') 
+          matchedVarPath.push(...matchValuePath)
+
+          const length = matchedVarPath.length;
+          for (let i=0; i < length; i++){
+            evalValue = nestedGetPathList(target, matchedVarPath)
+            if (evalValue){
+              break;
+            } else {
+              for (let k=0; k < matchValuePath.length; k++){
+                matchedVarPath.pop()
+              }
+              matchedVarPath.pop()
+              matchedVarPath.push(...matchValuePath)
+            }
+          }  
         }
+        
        
-        // If not found
+        // If not found -----------
         if (!evalValue){
           if (item == 'inherit|'){
-            throw(`Configuration Parse Error: Could not resolve ${value}\n in ${currentPath}`)}
+            throw(`Configuration Parse Error in ${yamlFileName}:\n Could not resolve ${value}\n in ${currentPath}`)}
           else {
             match = pattern.exec(value)
             continue; // pass to next variable in string
           }
         }
-        if (item=='configFile$'){
-          let a=1
-        }
+        
         // Found and it is an object
         if (typeof evalValue == 'object'){
           
           if (replaceValue != value){
-            throw (`Parsing Error : \n${value}\n at line ${currentPath}`)}
+            throw (`Parsing Error in ${yamlFileName}: \n${value}\n at line ${currentPath}`)}
           
           if (matchedVariable.includes('current')){
             modifiedValue = nestedGetPathList(context, matchedVarPath)
@@ -259,9 +285,9 @@ function evaluateYaml(content, variables) {
         }
         let yamlFileContent = parseYmlFile(file)
         if (yamlFileContent && yamlFileContent.errno == -2){
-          throw(`Yaml Error at ${currentPath} \n ${yamlFileContent.message}`)
+          throw(`Yaml Error in ${yamlFileName} \n at ${currentPath} \n ${yamlFileContent.message}`)
         }
-        let dict = evaluateYaml(yamlFileContent, {...context, ...subContext});
+        let dict = evaluateYaml(yamlFileContent, {...context, ...subContext}, file);
         let dictValue = dict[key];
         let currentValue = nestedGetPathList(target, parentList)
         matchedVariableArray.forEach(v=>{
@@ -272,6 +298,14 @@ function evaluateYaml(content, variables) {
         })
         _.merge(currentValue,dictValue)
 
+      }
+      else if (item == 'readEnv|'){
+        const fileContent = readFile(modifiedValue)
+        if (fileContent.errno){
+          throw (`Error in ${yamlFileName} \n ${currentPath} ' \n ${fileContent.message}`)
+        }
+        const envContent = dotenv.parse(fileContent)
+        nestedSetPathList(target, parentList, envContent)
       }
       else {
         // assign to an variable

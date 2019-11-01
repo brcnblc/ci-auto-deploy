@@ -376,7 +376,7 @@
       "example" : "deploy all staging"
     },
     "4" : {
-      "title" : "Positional arguments: [cloud-provider] [application] [environment] [env-suffix] [app-config]",
+      "title" : "Positional arguments: [application] [environment] [env-suffix] [app-config] [cloud-provider] ",
       "example" : "deploy myApi2 staging active highSecurity"
     }
   }

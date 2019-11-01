@@ -6,27 +6,27 @@ const print = function (txt){Print.print(txt)};
 const { evaluateYaml, parseYmlFile } = require('./helper')
 const _ = require('lodash')
 
-function parseArgs(argString, argDefinitions, mode){
+function parseArgs(args, argDefinitions, mode){
   try {
-    return argParse(argString, argDefinitions, mode)
+    return argParse(args, argDefinitions, mode)
     }
   catch (err){
     console.error(err);
     if (!err.includes('Error: Unknown parse mode')){
       console.error(`Check Command Line Options :`);
-      console.error(`${argString}`);
+      console.error(`${args}`);
     }
     process.exit(1);
   }
 
 }
 
-function evaluateVariables(argString){
+function evaluateVariables(args){
   
   let kwArgs = {};
 
   //Parse Defaults with command line arguments
-  _.merge(kwArgs, parseArgs(argString, argDefinitions))
+  _.merge(kwArgs, parseArgs(args, argDefinitions))
 
   
   //Merge configuartion file defaults
@@ -40,7 +40,7 @@ function evaluateVariables(argString){
       throw -1
     }
   
-    const ci = evaluateYaml(configContent, {args:kwArgs})
+    const ci = evaluateYaml(configContent, {args:kwArgs}, configFile)
     for ([key,value] of Object.entries(ci)){
       _.merge(kwArgs, value)
     }
@@ -58,9 +58,9 @@ function evaluateVariables(argString){
 
   //Merge Command Line Arguments 
   {
-    if (argString && argString != ''){
-      _.merge(kwArgs, parseArgs(argString, argDefinitions, mode = 'argsonly'))
-      _.merge(kwArgs, {input: {cliargs: argString}})
+    if (args.length > 0){
+      _.merge(kwArgs, parseArgs(args, argDefinitions, mode = 'argsonly'))
+      _.merge(kwArgs, {input: {cliargs: args}})
     }
   }
   
@@ -69,9 +69,10 @@ function evaluateVariables(argString){
   return kwArgs
 }
 
-async function run (argString) {
+async function run (args) {
+  
 
-  const kwArgs = evaluateVariables(argString);
+  const kwArgs = evaluateVariables(args);
   
   let exitcode;
 
@@ -99,8 +100,8 @@ const __name__ = process.argv[1].split('/').pop();
 
 if (__name__ == 'deploy.js'){
   try{
-    //print(`Process : ${process.argv[1]}`)
-    run(process.argv.slice(2).join(' '))
+    
+    run(process.argv.slice(2))
     .then(exitCode => exit(exitCode))
     .catch(exitCode => exit(exitCode))
 
