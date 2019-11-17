@@ -2,6 +2,7 @@ node_modules
 test_folder
 *.lock
 build
+.env
 
 # Elastic Beanstalk Files
 .elasticbeanstalk/*
