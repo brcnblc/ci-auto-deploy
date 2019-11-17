@@ -9,7 +9,7 @@ config:
       path : ${configPath}/.cloud/.aws
       defaultsFile : ${path}/aws_defaults.yaml
       readYaml|: ${defaultsFile},defaults,{path:\ ${path}}
-   
+
   lastRunFile: ${args.lastRunFile}
   secretsPath: ${args.secretsPath}
   passwordFile: ${secretsPath}/${args.passwordFile}

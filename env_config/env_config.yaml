@@ -1,0 +1,52 @@
+--- # Api Environment Variables
+
+# CI-YAML DIRECTIVES, FILES, IMPORTS
+include|: ${args.envPath}/my_services.yaml
+
+# COMMON VARIABLES
+common: &commonEnv
+  AUTHORIZATION: true
+
+# ------------- STAGING ENVIRONMENT ----------------- #
+staging: &stagingEnv
+  <<: *commonEnv
+  MY_ENV: staging
+
+  # Applications
+  myApi1: 
+    <<: *stagingEnv
+    SERVICES: *myApi1Services
+    API_PATH: /my-api
+    API_ENDPOINT: https://staging.myendpoint.lorem.ipsum
+    readYaml|: ${tokenFile}, ${appName}
+    PORT: 6600
+
+  myApi2:
+    <<: *stagingEnv
+    SERVICES: *myApi2Services
+    API_PATH: /my-api2
+    API_ENDPOINT: https://staging.myendpoint.lorem.ipsum2
+    readYaml|: ${tokenFile}, ${appName}
+    PORT: 7700
+
+# ------------- PRODUCTION ENVIRONMENT -------------- #
+production: &productionEnv
+  <<: *commonEnv
+  MY_ENV: production
+
+  # Applications
+  myApi1: 
+    <<: *productionEnv
+    SERVICES: *myApi1Services
+    API_PATH: /my-api
+    API_ENDPOINT: https://production.myendpoint.lorem.ipsum
+    readYaml|: ${tokenFile}, ${appName}
+    PORT: 6600
+
+  myApi2:
+    <<: *productionEnv
+    SERVICES: *myApi2Services
+    API_PATH: /my-api2
+    API_ENDPOINT: https://production.myendpoint.lorem.ipsum2
+    readYaml|: ${tokenFile}, ${appName}
+    PORT: 7700

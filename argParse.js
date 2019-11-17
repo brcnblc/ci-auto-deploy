@@ -1,5 +1,19 @@
 const yaml = require('js-yaml');
 
+function argParse(args, argDefs, mode){
+  try {
+    return parse(args, argDefs, mode)
+    }
+  catch (err){
+    console.error(err);
+    if (!err.includes('Error: Unknown parse mode')){
+      console.error(`Check Command Line Options :`);
+      console.error(`${args}`);
+    }
+    process.exit(1);
+  }
+}
+
 function parse (args, argDefs, mode='all') {
   if (!(['all', 'defaults', 'argsonly'].includes(mode))){
     throw (`Error: Unknown parse mode '${mode}' in parse function arguments.`)}
@@ -167,4 +181,4 @@ function evalStrings(argStr){
   return result;
 }
 
-module.exports = parse;
+module.exports = argParse;

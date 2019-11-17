@@ -5,9 +5,9 @@
 // # Licence : MIT
 //
 // Change below according to the running program
-const thisFileName = 'deploy.js' // Change here according to executable filename
-const workerFunction = require('./deploy_functions'); // Change here for specific worker function
-const argDefinitions = require('./deploy_arg_defs.json'); // Change here for argument definition file
+const thisFileName = 'awscli.js' // Change here according to executable filename
+const workerFunction = require('./aws_functions'); // Change here for specific worker function
+const argDefinitions = require('./aws_arg_defs.json'); // Change here for argument definition file
 // --------------------------------------------------------------------------------------------------
 
 const { exit , run } = require('./helper')

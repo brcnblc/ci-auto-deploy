@@ -1,0 +1,13 @@
+--- # Services
+
+myApi1Services: &myApi1Services
+  - admin
+  - user
+  - authorization
+
+myApi2Services: &myApi2Services
+  - form
+  - search
+  - feedBack
+  - survey
+  

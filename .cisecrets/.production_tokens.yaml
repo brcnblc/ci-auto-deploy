@@ -1,23 +1,15 @@
-defaults:
+commonTokens: &commonTokens
   DB_USER: my_prod_user
   DB_PASSWORD: my_prod_password
-
-production:
-  defaults:
-    inherit|: defaults
-
-    MY_API_KEY: 31dc63462d5bc55a09cb70ed8dc3526f
-    MY_SECRET_KEY: 50e7a4357f9a3f5271ad2e861dfc682f
+  MY_API_KEY: 31dc63462d5bd8dc3526fc55a09cb70e
+  MY_SECRET_KEY: 6150e7a4357f9a3dfc682ff5271ad2e8
   
-  myApi1:
-    inherit|: ${production.defaults}
+myApi1:
+  <<: *commonTokens
+  API1_KEY: c55a09cb7bd8dc3526f0e31dc63462d5
+  API1_SECRET_KEY: 9f5271ad2e8615a3dfc682f0e7a4357f
 
-    API1_KEY: 7bd8dc3526f462d0e31dc635c55a09cb
-    API1_SECRET_KEY: f5271ad057f9e7a432e8615a3dfc682f
-
-  myApi2:
-    inherit|: ${production.defaults}
-    
-    API2_KEY: 55a09cb7b0e31462d5cdc63d8dc3526f
-    API2_SECRET_KEY: 4357f9f55a271ad2e8610e7a3dfc682f
-
+myApi2:
+  <<: *commonTokens
+  API2_KEY: b7b0e31dc63d8dc3526f462d5c55a09c
+  API2_SECRET_KEY: 0e7a4357f9f55a3dfc682f271ad2e861

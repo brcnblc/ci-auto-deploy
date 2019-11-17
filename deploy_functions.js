@@ -1,13 +1,22 @@
-"use strict";
+// ----------  CI-Auto-Deploy Cloud Deployment Program using eb client tool -------------------------
+//
+// # Author : Bircan Bilici 
+// # Github: https://github.com/brcnblc
+// # Licence : MIT
+//
+// --------------------------------------------------------------------------------------------------
 
-const { spawn, spawnSync } = require("child_process"); // Syncronous execution
+"use strict";
+const { spawnSync } = require("child_process"); 
 const fs = require("fs");
 const { git, nested } = require('./library');
 const deepCopyPro  = require('./deepCopyPro')
 const _ = require('lodash');
 const md5 = require('blueimp-md5');
-const {copyFile, disableLine, parseYmlFile, sleep, passwordPrompt, startingPrompt,
-  camelCase, evaluateYaml, dumpYmlFile, dateSuffix} = require('./helper')
+const { evaluateYaml, parseYmlFile } = require("./yaml_script")
+const {runSpawn, copyFile, disableLine, sleep, passwordPrompt, startingPrompt,
+  camelCase, dumpYmlFile, dateSuffix} = require('./helper')
+
 
 // Write last deploy parameters into yaml file
 function writeLastDeployedFile(file, field, value){
@@ -32,43 +41,6 @@ function eb(args, returnError = false, stdin = null, simulate) {
   } else {
     return result.stdout || result.stderr
   }
-}
-
-// eb Async command
-async function runSpawn(command, args, simulate, raiseOnError=true) {
-  return new Promise(async function (resolve, reject)  {
-    let subProcess, processRunning, exitCode;
-    console.log (command, args.join(' '))
-    if (!simulate) {
-      subProcess = spawn(command, args, {shell:true});
-    } else {
-      subProcess = spawn('echo', [command, 'simulated'], {shell:true});
-    }
-    
-    subProcess.on('data', data => console.log(`${data.toString()}`));
-    
-    processRunning = true;
-    
-    subProcess.stdout.on('data', data => console.log(`${data.toString()}`));
-   
-    subProcess.stderr.on('data', data => {
-      if (raiseOnError){
-        reject(data.toString())
-      } else {
-        console.log(`${data.toString()}`)
-      }
-    });
-
-    subProcess.on('close', code => {processRunning = false; exitCode = code})
-    
-    while (processRunning){
-      await sleep(1000)
-      process.stdout.write('.')
-    }
-
-    resolve(exitCode)
-  })
-
 }
 
 // Write last ran configuration 
@@ -226,8 +198,8 @@ async function initDeploy(kwArgs){
 
   checkFiles(kwArgs, true)
 
-  const deployConfig = parseYmlFile(kwArgs.deployConfigFile)
-  const configuration = evaluateYaml (deployConfig, {args:kwArgs}, kwArgs.deployConfigFile)
+  
+  const configuration = evaluateYaml (kwArgs.deployConfigFile, {args:kwArgs})
   let {cloudProvider, cloudService, commandLineTool, application, environment, appConfig} = kwArgs;
   
   const mainConfigName = camelCase(`${cloudProvider}_${cloudService}_${commandLineTool}`,'_');
@@ -421,7 +393,7 @@ function evaluateCname(kwArgs, appConfiguration, environmentName){
 // Evaluate and override launch configuration
 function evalLaunch(kwArgs, createParameters, launch){
   if (launch){
-    let dict = evaluateYaml(parseYmlFile(kwArgs.launchFile), null, kwArgs.launchFile);
+    let dict = evaluateYaml(kwArgs.launchFile);
     const launchKeys = [];
     nested(dict, (cb) => {
       if (cb.level == 1 && launchKeys.indexOf(cb.item) == -1){launchKeys.push(cb.item)}
@@ -435,10 +407,45 @@ function evalLaunch(kwArgs, createParameters, launch){
   }
 }
 
+// Create env file from multi environment config file
+function createEnvFile(kwArgs, env){
+  const file = kwArgs.envFile
+  let data = "";
+  data += "# CI-AUTO-DEPLOY" + "\n"
+  data += "# Automatically created from multi-config environment file\n"
+  data += "# On " + new Date + "\n"
+  data += "# " + "-".repeat(48) + "\n"
+  data += "# Cloud Provider : " + kwArgs.cloudProvider + "\n"
+  data += "# Cloud Service : " + kwArgs.cloudService + "\n"
+  data += "# Environment : " + kwArgs.environment + "\n"
+  data += "# Application : " + kwArgs.application + "\n"
+  data += "# Configuration : " + kwArgs.appConfig + "\n"
+  data += "# " + "-".repeat(48) + "\n"
+  data += "\n"
+
+  for (let [key, value] of Object.entries(env)){
+  if (!Array.isArray(value)){
+    data += key + "=" + value + "\n"
+  } else {
+    data += key + "=" 
+    value.forEach((item,index)=>{
+      data += item 
+      if (index != value.length - 1){
+        data += ","
+      }
+    })
+    data += "\n"
+  }
+}
+
+fs.writeFileSync(file, data)
+return data
+}
+
 // AWS Elastic Beans Talk Deployement by eb client tool
 async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
   //_.merge(kwArgs, appConfiguration)
-  const {environmentFile, disableLines, ebignoreContent} = appConfiguration;
+  const {environmentFile, disableLines, ebignoreContent, accessProfile} = appConfiguration;
   const {application, environment, region, launch} = kwArgs;
   let createParameters = appConfiguration.create
   const environmentName = `${application}-${environment}` + (kwArgs.envSuffix ? `-${kwArgs.envSuffix}` : '')
@@ -450,37 +457,18 @@ async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
   // Evaluate Launch
   evalLaunch(kwArgs, createParameters, launch)
 
+  // Create environment file
+  createEnvFile(kwArgs, appConfiguration.env)
+  console.log('Environment file created.')
+
   // Start Job
   try {
 
     let result, exitCode, ebArgs;
 
-    // Copy env file
-    copyFile(environmentFile, kwArgs.envFile);
-
-    // Copy secrets
-    if (kwArgs.copySecrets){
-      const tokenFile = appConfiguration.tokenFile
-      if (!tokenFile){throw(`Token file definition for ${environment} could not be found.`)}
-      const tokenFileContent = parseYmlFile(tokenFile)
-      if (tokenFileContent.errno == -2){throw(`Token file ${tokenFile} does not exist.`)}
-      const tokenContent = evaluateYaml(tokenFileContent, null, tokenFile)
-      const tokens = tokenContent[environment][application]
-      let envFileContent = fs.readFileSync(environmentFile,{encoding:'utf8'}) 
-      if (tokens){
-        envFileContent += '\n\n# Auto inserted by ci-auto-deploy\n'
-        for (let [key, value] of Object.entries(tokens)){
-          envFileContent += key + '=' + value + '\n'
-        }
-        console.log(`Tokens inserted into ${environmentFile} from ${tokenFile} for ${application} `)
-      } else {
-        console.log(`\nNo secret definition exists for ${application} in ${tokenFile}`)
-      }
-      fs.writeFileSync(kwArgs.envFile, envFileContent)
-    }
-
     // init eb 
     let ebCmd = `init ${application} --region ${region} --platform Node.js --keyname aws`
+    if (accessProfile){ebCmd += ' --profile ' + accessProfile}
     console.log(`\nInitializing elasticbeanstalk with ${ebCmd}`)
     result = eb(ebCmd, null, null, kwArgs.simulate)
     console.log(result)
@@ -510,7 +498,9 @@ async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
     // Check Status of environment
     const status = {}
     console.log('\nChecking status of ' + environmentName + ' ...')
-    result = eb(`status ${environmentName}`, true)
+    ebCmd = `status ${environmentName}`
+    if (accessProfile){ebCmd += ' --profile ' + accessProfile}
+    result = eb(ebCmd, true)
     const statRaw = result.split('\n')
     for (let i=1; i< statRaw.length - 1 ; i++){
       const row = statRaw[i].trim().split(': ')
@@ -568,7 +558,11 @@ async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
       if (kwArgs.forceCreate){
         console.log(`\nEnvironment ${environmentName} not found. Creating ${environmentName} environment. This will take a few minutes.\n`)
         if (!createParameters.cname) {createParameters['cname'] = cname};
-        let createArgs = ['create', environmentName, "--nohang"];
+        let createArgs = ['create', environmentName, "--nohang", "--process"];
+        if (accessProfile){
+          createArgs.push('--profile')
+          createArgs.push(accessProfile)
+        }
         for (let [key, value] of Object.entries(createParameters).sort()) {
           createArgs.push(`--${key}`);
           if (typeof value != 'boolean') {createArgs.push(`"${value}"`)};
@@ -583,7 +577,9 @@ async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
     }
 
     //Check environment Again
-    result = eb(`use ${environmentName}`, true)
+    ebCmd = `use ${environmentName}`
+    if (accessProfile){ebCmd += ' --profile ' + accessProfile}
+    result = eb(ebCmd, true)
     if (result.search('ERROR: NotFoundError') > -1){
       throw `Environment ${environmentName} not found.`
     }
@@ -609,7 +605,9 @@ async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
     }
 
     if (forceUpdate){
-      result = eb(`appversion --delete ${version}`, true, 'y\n')
+      ebCmd = `appversion --delete ${version}`
+      if (accessProfile){ebCmd += ' --profile ' + accessProfile}
+      result = eb(ebCmd, true, 'y\n')
       if (result.includes('deleted successfully')){
         console.log('Old version deleted succesfully')
       } else if (!result.includes('does not have Application Version')){
@@ -617,9 +615,15 @@ async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
       }
     }
 
-    // Run command
-    ebArgs.push('-p')
+    ebArgs.push('--process')
     ebArgs.push('--nohang')
+
+    if (accessProfile){
+      ebArgs.push('--profile')
+      ebArgs.push(accessProfile)
+    }
+
+    // Run command
     exitCode = await runSpawn('eb', ebArgs, kwArgs.simulate)
     .catch(async function (err) {
       if (err.includes('WARNING: Deploying a previously deployed commit')){
@@ -634,8 +638,9 @@ async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
             clearInterval(interval);
             throw(`Number of retries exceeded ${retry} while waiting for Ready state.`)
           }
-
-          const newStatus = eb(`status ${environmentName}`)
+          ebCmd = `status ${environmentName}`
+          if (accessProfile){ebCmd += ' --profile ' + accessProfile}
+          const newStatus = eb(ebCmd)
           const statusStart = newStatus.indexOf('Status');
           const statusEnd = newStatus.indexOf('\n',statusStart);
           const statusStr = newStatus.substring(statusStart, statusEnd)
@@ -647,6 +652,7 @@ async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
             const newVersion = oldVersion + '-' + dateSuffix('_')
             ebArgs[findInd + 1] = newVersion
             console.log(`Retrying to deploy application with time stamp as ${newVersion}`)
+            // run eb command again
             runSpawn('eb', ebArgs, kwArgs.simulate)
             .then(code => {ecode = code;done=true;})
             .catch(err => {ecode = err;done=true})

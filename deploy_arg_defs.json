@@ -281,7 +281,7 @@
     },
     "env-path" : {
       "variableName" : "envPath",
-      "defaultValue" : ".cienvs",
+      "defaultValue" : "env_config",
       "type" : "parameter",
       "longCommand" : "env-path",
       "shortCommand" : "ep",
@@ -359,6 +359,15 @@
       "shortCommand" : "brn",
       "definition" : "If specified, runs build script before deployment.",
       "usage" : null
+    },
+    "access-profile" : {
+      "variableName" : "accessProfile",
+      "defaultValue" : null,
+      "type" : "parameter",
+      "longCommand" : "access-profile",
+      "shortCommand" : "acp",
+      "definition" : "Defines access profile name to be used as credentials.",
+      "usage" : "<AccessProfileName>"
     }
   },
   "positionals" : ["application", "environment", "env-suffix", "app-config", "cloud-provider"],

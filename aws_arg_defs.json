@@ -1,0 +1,58 @@
+{ "title" : "AWS Command Line Tool Extender for Continuous Integration Pipelines",
+  "arguments" : {
+    "command-file" : {
+      "variableName" : "commandFile",
+      "defaultValue" : null,
+      "type" : "parameter",
+      "longCommand" : "command-file",
+      "shortCommand" : "cmd",
+      "definition" : "Defines the command file name.",
+      "usage" : "<NameOfCommandFile>"
+    },
+    "parameter-file" : {
+      "variableName" : "parameterFile",
+      "defaultValue" : null,
+      "type" : "parameter",
+      "longCommand" : "parameter-file",
+      "shortCommand" : "cmd",
+      "definition" : "Defines the command file name.",
+      "usage" : "<NameOfCommandFile>"
+    },
+    "config-file" : {
+      "variableName" : "configFile",
+      "defaultValue" : null,
+      "type" : "parameter",
+      "longCommand" : "config-file",
+      "shortCommand" : "cfg",
+      "definition" : "Defines the file which includes configuration parameters. (*.yaml)",
+      "usage" : "<Name of Certificate Config File>"
+    },
+    "config-path" : {
+      "variableName" : "configPath",
+      "defaultValue" : null,
+      "type" : "parameter",
+      "longCommand" : "config-path",
+      "shortCommand" : "cnp",
+      "definition" : "Defines a path variable to be used for files.",
+      "usage" : "<PathOfConfigurationFile>"
+    },
+    "path" : {
+      "variableName" : "path",
+      "defaultValue" : null,
+      "type" : "parameter",
+      "longCommand" : "path",
+      "shortCommand" : "pt",
+      "definition" : "Defines the  path which includes command and configuration files. Overrides other path arguments.",
+      "usage" : "<PathOfFiles>"
+    }
+
+  },
+  "positionals" : ["commandFile", "configFile"],
+  "examples" : {
+    "1" : {
+      "title" : "FIRST, ADD FOLLOWING LINE to your scripts in package.json.",
+      "example" : "awscli: node awscli.js"
+    }
+  }
+
+}

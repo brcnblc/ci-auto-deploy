@@ -1,22 +1,15 @@
-defaults:
+commonTokens: &commonTokens
   DB_USER: my_user
   DB_PASSWORD: my_password
-
-staging:
-  defaults:
-    inherit|: ${defaults}
-
-    MY_API_KEY: c55a09cb70e31dc63462d5bd8dc3526f
-    MY_SECRET_KEY: f5271ad2e86150e7a4357f9a3dfc682f
+  MY_API_KEY: c55a09cb70e31dc63462d5bd8dc3526f
+  MY_SECRET_KEY: f5271ad2e86150e7a4357f9a3dfc682f
   
-  myApi1:
-    inherit|: ${staging.defaults}
-    
-    API1_KEY: 0e31dc63462d5c55a09cb7bd8dc3526f
-    API1_SECRET_KEY: 0e7a4357f9f5271ad2e8615a3dfc682f
+myApi1:
+  <<: *commonTokens
+  API1_KEY: 0e31dc63462d5c55a09cb7bd8dc3526f
+  API1_SECRET_KEY: 0e7a4357f9f5271ad2e8615a3dfc682f
 
-  myApi2:
-    inherit|: ${staging.defaults}
-    
-    API2_KEY: 462d5c55a09cb7b0e31dc63d8dc3526f
-    API2_SECRET_KEY: 271ad2e8610e7a4357f9f55a3dfc682f
+myApi2:
+  <<: *commonTokens
+  API2_KEY: 462d5c55a09cb7b0e31dc63d8dc3526f
+  API2_SECRET_KEY: 271ad2e8610e7a4357f9f55a3dfc682f

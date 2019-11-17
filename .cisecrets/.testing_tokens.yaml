@@ -1,16 +1,15 @@
-defaults:
-  DB_USER: my_dev_user
-  DB_PASSWORD: my_dev_password
-
-staging:
-  defaults:
-    inherit|: defaults
-
-    MY_API_KEY: 9cb70e31dc63462dc55a05bd8dc3526f
-    MY_SECRET_KEY: d2e86150e7a43f5271a57f9a3dfc682f
+commonTokens: &commonTokens
+  DB_USER: my_test_user
+  DB_PASSWORD: my_test_password
+  MY_API_KEY: 8dc3526f31dc63462d5bdc55a09cb70e
+  MY_SECRET_KEY: 57f9a3d6150e7a43fc682ff5271ad2e8
   
-  api1:
-    inherit|: ${staging.defaults}
-    
-    API1_KEY2: 0e315a09cb7bd8dc3526fdc63462d5c5
-    SECRET_KEY2: ad2e8615a3dfc682f0e7a4357f9f5271
+myApi1:
+  <<: *commonTokens
+  API1_KEY: cb7bd8dcc55a093526f0e31dc63462d5
+  API1_SECRET_KEY: 2e8615a9f5271ad3dfc682f0e7a4357f
+
+myApi2:
+  <<: *commonTokens
+  API2_KEY: 526f4b7b0e31dc63d8dc362d5c55a09c
+  API2_SECRET_KEY: 7a4357f0e9f55a3dfc682f271ad2e861

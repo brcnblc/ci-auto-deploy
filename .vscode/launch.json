@@ -5,6 +5,7 @@
   "version": "0.2.0",
   "configurations": [
 
+
     {
       "type": "node",
       "request": "launch",
@@ -20,7 +21,7 @@
       "name": "Deploy All with args",
       "program": "${workspaceFolder}/deploy.js",
       "cwd": "${workspaceFolder}",
-      "args": ["aws", "all", "staging", "--debug", "--simulate", "--passwords", "\"{staging: staging}\""],
+      "args": ["all", "staging", "--debug", "--simulate", "--passwords", "{staging: staging}"],
       "env": {"CI_AUTO_DEPLOY": ""}
     },
     {
@@ -29,7 +30,7 @@
       "name": "Deploy no Args",
       "program": "${workspaceFolder}/deploy.js",
       "cwd": "${workspaceFolder}",
-      "args": ["--debug","--simulate", "--passwords", "\"{staging: staging, production: production}\""],
+      "args": ["--debug",v"--simulate", "--passwords", "{staging: staging, production: production}"],
       "env": {"CI_AUTO_DEPLOY": ""}
     },
     {
@@ -38,7 +39,7 @@
       "name": "Deploy all no args",
       "program": "${workspaceFolder}/deploy.js",
       "cwd": "${workspaceFolder}",
-      "args": ["all", "--debug","--simulate", "--simulate", "--passwords", "\"{staging: staging, production: production}\""],
+      "args": ["all", "--debug","--simulate", "--simulate", "--passwords", "{staging: staging, production: production}"],
       "env": {"CI_AUTO_DEPLOY": ""}
     },
     {
@@ -47,7 +48,7 @@
       "name": "Deploy build",
       "program": "${workspaceFolder}/deploy.js",
       "cwd": "${workspaceFolder}",
-      "args": ["aws myApi1 staging", "--build-deploy", "--build-run" ,"--debug", "--passwords", "\"{staging: staging}\""],
+      "args": ["myApi1", "staging", "--build-deploy", "--build-run" ,"--debug", "--passwords", "{staging: staging}"],
       "env": {"CI_AUTO_DEPLOY": ""}
     },
     {
@@ -56,8 +57,17 @@
       "name": "Deploy production",
       "program": "${workspaceFolder}/deploy.js",
       "cwd": "${workspaceFolder}",
-      "args": ["aws myApi1 production" , "--debug", "--passwords", "\"{production: production}\""],
+      "args": ["myApi1", "production" , "--debug", "--simulate", "--passwords", "{production: production}"],
       "env": {"CI_AUTO_DEPLOY": ""}
-    }
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Cert Request",
+      "program": "${workspaceFolder}/awscli.js",
+      "cwd": "${workspaceFolder}",
+      "args": ["--command-file", "${args.path}/request_cert.yaml", "--parameter-file", "${args.path}/cert_config.yaml", "--path", ".ciautodeploy/.cloud/.aws"],
+      "env": {"CI_AUTO_DEPLOY": ""}
+    },
   ]
 }
