@@ -423,20 +423,23 @@ function createEnvFile(kwArgs, env){
   data += "# " + "-".repeat(48) + "\n"
   data += "\n"
 
-  for (let [key, value] of Object.entries(env)){
-  if (!Array.isArray(value)){
-    data += key + "=" + value + "\n"
-  } else {
-    data += key + "=" 
-    value.forEach((item,index)=>{
-      data += item 
-      if (index != value.length - 1){
-        data += ","
+  if (env){
+    for (let [key, value] of Object.entries(env)){
+      if (!Array.isArray(value)){
+        data += key + "=" + value + "\n"
+      } else {
+        data += key + "=" 
+        value.forEach((item,index)=>{
+          data += item 
+          if (index != value.length - 1){
+            data += ","
+          }
+        })
+        data += "\n"
       }
-    })
-    data += "\n"
+    }
   }
-}
+
 
 fs.writeFileSync(file, data)
 return data

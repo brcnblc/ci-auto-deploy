@@ -20,14 +20,16 @@ function parseYaml(strContent, options={}){
   try {
     return yaml.load(strContent)
   } catch (err) {
-    const lineContent = getLineFromLineNumber(strContent, err.mark.line + 1)
+    if (err.mark.line !== 0){
+      const lineContent = getLineFromLineNumber(strContent, err.mark.line + 1)
 
-    if (lineContent){
-      options.lineNumber = err.mark.line - (options.includedFileTotalLines ? options.includedFileTotalLines : 0);
-      options.strContent = strContent
-      
-    } else {
-      options.lineContent = strContent
+      if (lineContent){
+        options.lineNumber = err.mark.line - (options.includedFileTotalLines ? options.includedFileTotalLines : 0);
+        options.strContent = strContent
+        
+      } else {
+        options.lineContent = strContent
+      }
     }
     handleError(err, options)
   }
@@ -314,7 +316,9 @@ function evaluateYaml(yamlFileName, variables, strContent, options ) {
               subContext_ += ',' + value.trim().toString() 
             })
           }
-          const replacedSubContext = subContext_.replace(/\:\\/gm,':')
+          const replacedSubContext = subContext_.replace(/\:\\/gm,':').replace(/\$\{([^\{\}]+)\}/gm, '\"\$&\"').replace(/""/gm,'"')
+          //const replacedSubContext = subContext_.replace(/\:\\/gm,':')
+          
           subContext = parseYaml(replacedSubContext,  {yamlFileName: yamlFileName, lineNumber, lineContent})
         }
        
