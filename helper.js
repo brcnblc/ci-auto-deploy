@@ -10,6 +10,22 @@ const { evaluateYaml } = require('./yaml_script')
 const Print = require('./library').Print.prototype;
 const print = function (txt){Print.print(txt)};
 
+// Run Sync command
+function runSpawnSync(command, returnError = false, stdin = null, simulate) {
+  let result={};
+  console.log (command)
+  if (!simulate){
+    result = spawnSync(command, {encoding:'utf8', shell:true, input:stdin});
+  } else {
+    result = spawnSync(`echo simulate command`, {encoding:'utf8', shell:true, input:stdin});
+  }
+  
+  if (result.status !=0 &! returnError){
+    throw result.stdout || result.stderr
+  } else {
+    return result.stdout || result.stderr
+  }
+}
 // Async function to run bash commands
 async function runSpawn(command, args, simulate, raiseOnError=true) {
   return new Promise(async function (resolve, reject)  {
@@ -268,4 +284,4 @@ async function run (args, argDefs, workerFunction) {
 
 module.exports = {copyFile, disableLine, listFiles, parseJsonFile, startingPrompt,
   sleep, passwordPrompt, capitalize, camelCase, dumpYmlFile, dateSuffix, evaluateVariables, 
-  exit, run, runSpawn }
+  exit, run, runSpawn, runSpawnSync }

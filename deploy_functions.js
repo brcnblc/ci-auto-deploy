@@ -14,7 +14,7 @@ const deepCopyPro  = require('./deepCopyPro')
 const _ = require('lodash');
 const md5 = require('blueimp-md5');
 const { evaluateYaml, parseYmlFile } = require("./yaml_script")
-const {runSpawn, copyFile, disableLine, sleep, passwordPrompt, startingPrompt,
+const {runSpawn, runSpawnSync, copyFile, disableLine, sleep, passwordPrompt, startingPrompt,
   camelCase, dumpYmlFile, dateSuffix} = require('./helper')
 
 
@@ -23,24 +23,6 @@ function writeLastDeployedFile(file, field, value){
   let content = {}
   content[field]=value;
   dumpYmlFile(file, content)
-}
-
-// eb Sync command
-function eb(args, returnError = false, stdin = null, simulate) {
-  let result={};
-  console.log (`eb ${args}`)
-  if (!simulate){
-    result = spawnSync(`eb ${args}`, {encoding:'utf8', shell:true, input:stdin});
-  } else {
-    result = spawnSync(`echo simulate eb`, {encoding:'utf8', shell:true, input:stdin});
-    
-  }
-  
-  if (result.status !=0 &! returnError){
-    throw result.stdout || result.stderr
-  } else {
-    return result.stdout || result.stderr
-  }
 }
 
 // Write last ran configuration 
@@ -456,7 +438,7 @@ async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
   // Evaluate cname
   const cname = evaluateCname(kwArgs, appConfiguration, environmentName);
   const isActiveEnvironment = (cname == appConfiguration.activeCname);
-  
+  const cloudPath = kwArgs.cloud[kwArgs.cloudProvider].path
   // Evaluate Launch
   evalLaunch(kwArgs, createParameters, launch)
 
@@ -470,14 +452,18 @@ async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
     let result, exitCode, ebArgs;
 
     // init eb 
-    let ebCmd = `init ${application} --region ${region} --platform Node.js --keyname aws`
+    let ebCmd = `eb init ${application} --region ${region} --platform Node.js --keyname aws`
     if (accessProfile){ebCmd += ' --profile ' + accessProfile}
     console.log(`\nInitializing elasticbeanstalk with ${ebCmd}`)
-    result = eb(ebCmd, null, null, kwArgs.simulate)
+    result = runSpawnSync(ebCmd, null, null, kwArgs.simulate)
     console.log(result)
 
-    // Copy elastic beans talk config file
-    //copyFile(configFile, '.elasticbeanstalk/config.yml');
+    // Copy .ebextensions
+    result = runSpawnSync('rm -r .ebextensions', true)
+    result = runSpawnSync('mkdir .ebextensions')
+    result = runSpawnSync(`cp ${cloudPath}/.ebextensions/common/* .ebextensions/`)
+    result = runSpawnSync(`cp ${cloudPath}/.ebextensions/${environment}/* .ebextensions/`)
+    
 
     if (kwArgs.buildRun){
       console.log(`Building application.`)
@@ -501,9 +487,9 @@ async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
     // Check Status of environment
     const status = {}
     console.log('\nChecking status of ' + environmentName + ' ...')
-    ebCmd = `status ${environmentName}`
+    ebCmd = `eb status ${environmentName}`
     if (accessProfile){ebCmd += ' --profile ' + accessProfile}
-    result = eb(ebCmd, true)
+    result = runSpawnSync(ebCmd, true)
     const statRaw = result.split('\n')
     for (let i=1; i< statRaw.length - 1 ; i++){
       const row = statRaw[i].trim().split(': ')
@@ -580,9 +566,9 @@ async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
     }
 
     //Check environment Again
-    ebCmd = `use ${environmentName}`
+    ebCmd = `eb use ${environmentName}`
     if (accessProfile){ebCmd += ' --profile ' + accessProfile}
-    result = eb(ebCmd, true)
+    result = runSpawnSync(ebCmd, true)
     if (result.search('ERROR: NotFoundError') > -1){
       throw `Environment ${environmentName} not found.`
     }
@@ -608,9 +594,9 @@ async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
     }
 
     if (forceUpdate){
-      ebCmd = `appversion --delete ${version}`
+      ebCmd = `eb appversion --delete ${version}`
       if (accessProfile){ebCmd += ' --profile ' + accessProfile}
-      result = eb(ebCmd, true, 'y\n')
+      result = runSpawnSync(ebCmd, true, 'y\n')
       if (result.includes('deleted successfully')){
         console.log('Old version deleted succesfully')
       } else if (!result.includes('does not have Application Version')){
@@ -630,7 +616,7 @@ async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
     exitCode = await runSpawn('eb', ebArgs, kwArgs.simulate)
     .catch(async function (err) {
       if (err.includes('WARNING: Deploying a previously deployed commit')){
-        result = eb('abort')
+        result = runSpawnSync('eb abort')
         console.error('Warning : Version label already exists, Aborting and adding timestamp suffix to version label name.')
         let cnt=0, retry = 5, done=false, ecode=null;
         let interval = setInterval(function intervalFunction(){
@@ -641,9 +627,9 @@ async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
             clearInterval(interval);
             throw(`Number of retries exceeded ${retry} while waiting for Ready state.`)
           }
-          ebCmd = `status ${environmentName}`
+          ebCmd = `eb status ${environmentName}`
           if (accessProfile){ebCmd += ' --profile ' + accessProfile}
-          const newStatus = eb(ebCmd)
+          const newStatus = runSpawnSync(ebCmd)
           const statusStart = newStatus.indexOf('Status');
           const statusEnd = newStatus.indexOf('\n',statusStart);
           const statusStr = newStatus.substring(statusStart, statusEnd)

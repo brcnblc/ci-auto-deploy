@@ -12,7 +12,7 @@
       "name": "Deploy",
       "program": "${workspaceFolder}/deploy.js",
       "cwd": "${workspaceFolder}",
-      "args": ["myApi1", "staging", "--debug", "--simulate", "--passwords", "{staging: staging}"],
+      "args": ["myApi2", "staging", "--debug", "--simulate", "--passwords", "{staging: staging}"],
       "env": {"CI_AUTO_DEPLOY": ""}
     },
     {

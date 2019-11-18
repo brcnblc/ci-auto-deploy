@@ -8,9 +8,10 @@ common: &commonEnv
   AUTHORIZATION: true
 
 # ------------- STAGING ENVIRONMENT ----------------- #
-staging: &stagingEnv
-  <<: *commonEnv
-  MY_ENV: staging
+staging: 
+  common: &stagingEnv
+    <<: *commonEnv
+    MY_ENV: staging
 
   # Applications
   myApi1: 
@@ -30,9 +31,10 @@ staging: &stagingEnv
     PORT: 7700
 
 # ------------- PRODUCTION ENVIRONMENT -------------- #
-production: &productionEnv
-  <<: *commonEnv
-  MY_ENV: production
+production: 
+  common: &productionEnv
+    <<: *commonEnv
+    MY_ENV: production
 
   # Applications
   myApi1: 
