@@ -460,9 +460,9 @@ async function deployAwsElasticBeansTalk (kwArgs, appConfiguration) {
 
     // Copy .ebextensions
     result = runSpawnSync('rm -r .ebextensions', true)
-    result = runSpawnSync('mkdir .ebextensions')
-    result = runSpawnSync(`cp ${cloudPath}/.ebextensions/common/* .ebextensions/`)
-    result = runSpawnSync(`cp ${cloudPath}/.ebextensions/${environment}/* .ebextensions/`)
+    result = runSpawnSync('mkdir .ebextensions',true)
+    result = runSpawnSync(`cp ${cloudPath}/.ebextensions/common/* .ebextensions/`,true)
+    result = runSpawnSync(`cp ${cloudPath}/.ebextensions/${environment}/* .ebextensions/`,true)
     
 
     if (kwArgs.buildRun){

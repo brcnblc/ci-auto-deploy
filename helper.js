@@ -23,6 +23,8 @@ function runSpawnSync(command, returnError = false, stdin = null, simulate) {
   if (result.status !=0 &! returnError){
     throw result.stdout || result.stderr
   } else {
+    if (result.stdout){console.log(result.stdout)}
+    if (result.stderr){console.log(result.stderr)}
     return result.stdout || result.stderr
   }
 }
